@@ -29,6 +29,7 @@ const RULES = [
   "The 2×2 tile always sits exactly in the middle.",
   "No 1×2 tile may share an edge with any 2×1 tile.",
   "No two 1×1 tiles may share an edge.",
+  "No 1×1 tile may sit in a corner of its 4×4 section.",
 ];
 
 const BOARD_COUNT = 9;
