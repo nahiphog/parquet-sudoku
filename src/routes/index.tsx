@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
-import { GRID_SIZE, layoutCount, randomLayout, type Tile } from "@/lib/parquet";
+import { GRID_SIZE, allLayouts, layoutCount, randomLayout, type Tile } from "@/lib/parquet";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,9 +33,14 @@ const RULES = [
 
 const BOARD_COUNT = 9;
 const COMBINED_SIZE = GRID_SIZE * 3;
+const FIRST_LAYOUT = allLayouts()[0] ?? [];
 
 function createBoards(previous?: Tile[][]): Tile[][] {
   return Array.from({ length: BOARD_COUNT }, (_, index) => randomLayout(previous?.[index]));
+}
+
+function createInitialBoards(): Tile[][] {
+  return Array.from({ length: BOARD_COUNT }, () => FIRST_LAYOUT.map((tile) => ({ ...tile })));
 }
 
 function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
@@ -79,7 +84,7 @@ function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
         >
           {tiles.map((tile, index) => (
             <div
-              key={`${spin}-${tile.id}`}
+              key={`${spin}-${index}`}
               className="animate-tile-settle border border-border bg-card"
               style={{
                 gridRow: `${tile.row + 1} / span ${tile.height}`,
@@ -101,7 +106,7 @@ function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
 }
 
 function Index() {
-  const [boards, setBoards] = useState<Tile[][]>(() => createBoards());
+  const [boards, setBoards] = useState<Tile[][]>(createInitialBoards);
   const [spin, setSpin] = useState(0);
 
   const generate = useCallback(() => {
