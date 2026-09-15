@@ -62,6 +62,13 @@ function createBoards(): Tile[][] {
   return shuffle(candidates).map((layout) => layout.map((tile) => ({ ...tile })));
 }
 
+function createInitialBoards(): Tile[][] {
+  if (VALID_LAYOUTS.length === 0) return [];
+  return Array.from({ length: BOARD_COUNT }, (_, index) =>
+    VALID_LAYOUTS[index % VALID_LAYOUTS.length]!.map((tile) => ({ ...tile })),
+  );
+}
+
 function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
   const tiles = boards.flatMap((board, boardIndex) => {
     const boardRow = Math.floor(boardIndex / 3);
@@ -125,7 +132,7 @@ function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
 }
 
 function Index() {
-  const [boards, setBoards] = useState<Tile[][]>(createBoards);
+  const [boards, setBoards] = useState<Tile[][]>(createInitialBoards);
   const [spin, setSpin] = useState(0);
 
   const generate = useCallback(() => {
