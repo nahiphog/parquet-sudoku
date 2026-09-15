@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
-import { GRID_SIZE, layoutCount, randomLayout, type Tile, type TileKind } from "@/lib/parquet";
+import { GRID_SIZE, layoutCount, randomLayout, type Tile } from "@/lib/parquet";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -18,31 +18,12 @@ export const Route = createFileRoute("/")({
         content:
           "Press generate to lay nine parquet tiles into a 4x4 grid under three placement rules.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Index,
 });
-
-const KIND_STYLES: Record<TileKind, string> = {
-  square: "bg-tile-square text-tile-square-foreground",
-  horizontal: "bg-tile-horizontal text-tile-foreground",
-  vertical: "bg-tile-vertical text-tile-foreground",
-  single: "bg-tile-single text-tile-foreground",
-};
-
-const KIND_LABELS: Record<TileKind, string> = {
-  square: "2×2",
-  horizontal: "1×2",
-  vertical: "2×1",
-  single: "1×1",
-};
-
-const LEGEND: Array<{ kind: TileKind; count: number; note: string }> = [
-  { kind: "square", count: 1, note: "locked to the centre" },
-  { kind: "horizontal", count: 2, note: "wide pieces" },
-  { kind: "vertical", count: 2, note: "tall pieces" },
-  { kind: "single", count: 4, note: "never adjacent" },
-];
 
 const RULES = [
   "The 2×2 tile always sits exactly in the middle.",
@@ -50,46 +31,68 @@ const RULES = [
   "No two 1×1 tiles may share an edge.",
 ];
 
-function Board({ tiles, spin }: { tiles: Tile[]; spin: number }) {
+const BOARD_COUNT = 9;
+const COMBINED_SIZE = GRID_SIZE * 3;
+
+function createBoards(previous?: Tile[][]): Tile[][] {
+  return Array.from({ length: BOARD_COUNT }, (_, index) => randomLayout(previous?.[index]));
+}
+
+function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
+  const tiles = boards.flatMap((board, boardIndex) => {
+    const boardRow = Math.floor(boardIndex / 3);
+    const boardCol = boardIndex % 3;
+    return board.map((tile) => ({
+      ...tile,
+      id: boardIndex * 100 + tile.id,
+      row: tile.row + boardRow * GRID_SIZE,
+      col: tile.col + boardCol * GRID_SIZE,
+    }));
+  });
+
   return (
     <div
-      className="relative aspect-square w-full max-w-md rounded-2xl bg-board p-3 shadow-board ring-1 ring-border"
+      className="relative aspect-square w-full max-w-xl bg-board p-2 shadow-board ring-1 ring-border sm:p-3"
       role="img"
-      aria-label="Four by four parquet grid filled with nine tiles"
+      aria-label="Twelve by twelve parquet grid made from nine four by four tile layouts"
     >
-      <div className="relative h-full w-full overflow-hidden rounded-xl">
+      <div className="relative h-full w-full overflow-hidden">
         <div
           className="absolute inset-0 grid"
           style={{
-            gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
           }}
           aria-hidden="true"
         >
-          {Array.from({ length: GRID_SIZE * GRID_SIZE }).map((_, i) => (
+          {Array.from({ length: COMBINED_SIZE * COMBINED_SIZE }).map((_, i) => (
             <div key={i} className="border border-dashed border-board-line/70" />
           ))}
         </div>
 
         <div
-          className="absolute inset-0 grid gap-[3px] p-[3px]"
+          className="absolute inset-0 grid gap-px p-px"
           style={{
-            gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(${GRID_SIZE}, minmax(0, 1fr))`,
+            gridTemplateColumns: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
           }}
         >
           {tiles.map((tile, index) => (
             <div
               key={`${spin}-${tile.id}`}
-              className={`tile-surface animate-tile-settle flex items-center justify-center rounded-lg text-sm font-semibold tracking-wide ${KIND_STYLES[tile.kind]}`}
+              className="animate-tile-settle border border-border bg-card"
               style={{
                 gridRow: `${tile.row + 1} / span ${tile.height}`,
                 gridColumn: `${tile.col + 1} / span ${tile.width}`,
-                animationDelay: `${index * 45}ms`,
+                animationDelay: `${index * 8}ms`,
               }}
-            >
-              {KIND_LABELS[tile.kind]}
-            </div>
+            />
+          ))}
+        </div>
+
+        <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3" aria-hidden="true">
+          {Array.from({ length: BOARD_COUNT }).map((_, index) => (
+            <div key={index} className="border border-foreground/30" />
           ))}
         </div>
       </div>
@@ -98,11 +101,11 @@ function Board({ tiles, spin }: { tiles: Tile[]; spin: number }) {
 }
 
 function Index() {
-  const [tiles, setTiles] = useState<Tile[]>(() => randomLayout());
+  const [boards, setBoards] = useState<Tile[][]>(() => createBoards());
   const [spin, setSpin] = useState(0);
 
   const generate = useCallback(() => {
-    setTiles((current) => randomLayout(current));
+    setBoards((current) => createBoards(current));
     setSpin((s) => s + 1);
   }, []);
 
@@ -114,54 +117,31 @@ function Index() {
             Parquet Sudoku
           </p>
           <h1 className="mt-4 text-4xl leading-tight font-semibold text-foreground sm:text-5xl">
-            Nine tiles, one 4×4 floor, three unbreakable rules.
+            Nine parquet puzzles, one 12×12 grid.
           </h1>
           <p className="mt-5 text-base leading-relaxed text-muted-foreground">
-            Every layout uses one 2×2 tile, two 1×2 tiles, two 2×1 tiles and four 1×1 tiles.
-            Press generate to lay a fresh floor.
+            Each 4×4 section uses one 2×2 tile, two 1×2 tiles, two 2×1 tiles and four 1×1
+            tiles. Press generate to create all nine sections at once.
           </p>
         </header>
 
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.75fr)] lg:items-start">
           <section className="flex flex-col items-center gap-6">
-            <Board tiles={tiles} spin={spin} />
+            <Board boards={boards} spin={spin} />
             <button
               type="button"
               onClick={generate}
               className="inline-flex items-center gap-3 rounded-full bg-primary px-8 py-4 text-sm font-semibold tracking-wide text-primary-foreground shadow-board transition-transform hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring active:translate-y-0"
             >
-              Generate grid
+              Generate 12×12 grid
               <span aria-hidden="true">↻</span>
             </button>
             <p className="text-xs text-muted-foreground">
-              Layout {spin + 1} generated · {layoutCount} arrangements satisfy every rule
+              Grid {spin + 1} generated · nine independently randomized 4×4 sections
             </p>
           </section>
 
-          <section className="flex flex-col gap-10">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">The tile set</h2>
-              <ul className="mt-4 flex flex-col gap-3">
-                {LEGEND.map((item) => (
-                  <li
-                    key={item.kind}
-                    className="flex items-center gap-4 rounded-xl bg-card p-3 ring-1 ring-border"
-                  >
-                    <span
-                      className={`tile-surface flex h-9 w-9 items-center justify-center rounded-md text-xs font-semibold ${KIND_STYLES[item.kind]}`}
-                    >
-                      {KIND_LABELS[item.kind]}
-                    </span>
-                    <span className="text-sm text-card-foreground">
-                      <span className="font-semibold">{item.count}×</span> {KIND_LABELS[item.kind]}{" "}
-                      tile{item.count > 1 ? "s" : ""}
-                      <span className="text-muted-foreground"> — {item.note}</span>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
+          <section>
             <div>
               <h2 className="text-lg font-semibold text-foreground">Placement rules</h2>
               <ol className="mt-4 flex flex-col gap-4">
@@ -176,8 +156,7 @@ function Index() {
               </ol>
               <p className="mt-6 border-l-2 border-border pl-4 text-sm leading-relaxed text-muted-foreground">
                 Tiles &ldquo;touch&rdquo; when they share an edge; meeting at a corner is allowed.
-                Under that reading exactly {layoutCount} distinct floors exist, so the generator
-                picks a different one from the last each time.
+                Each 4×4 section independently uses one of the {layoutCount} valid arrangements.
               </p>
             </div>
           </section>
