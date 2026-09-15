@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useState } from "react";
 
-import { GRID_SIZE, allLayouts, layoutCount, randomLayout, type Tile } from "@/lib/parquet";
+import { GRID_SIZE, allLayouts, layoutCount, type Tile } from "@/lib/parquet";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,14 +33,40 @@ const RULES = [
 
 const BOARD_COUNT = 9;
 const COMBINED_SIZE = GRID_SIZE * 3;
-const FIRST_LAYOUT = allLayouts()[0] ?? [];
+const VALID_LAYOUTS = allLayouts();
 
-function createBoards(previous?: Tile[][]): Tile[][] {
-  return Array.from({ length: BOARD_COUNT }, (_, index) => randomLayout(previous?.[index]));
+function shuffle<T>(items: T[]): T[] {
+  const shuffled = [...items];
+  for (let index = shuffled.length - 1; index > 0; index--) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const current = shuffled[index];
+    const replacement = shuffled[swapIndex];
+    if (current === undefined || replacement === undefined) continue;
+    shuffled[index] = replacement;
+    shuffled[swapIndex] = current;
+  }
+  return shuffled;
+}
+
+function createBoards(): Tile[][] {
+  if (VALID_LAYOUTS.length === 0) return [];
+
+  // Build each 4×4 section from its own layout choice. Repeating the full set
+  // before shuffling guarantees visible variety even though only three valid
+  // arrangements exist and nine sections must be filled.
+  const candidates = Array.from(
+    { length: BOARD_COUNT },
+    (_, index) => VALID_LAYOUTS[index % VALID_LAYOUTS.length]!,
+  );
+
+  return shuffle(candidates).map((layout) => layout.map((tile) => ({ ...tile })));
 }
 
 function createInitialBoards(): Tile[][] {
-  return Array.from({ length: BOARD_COUNT }, () => FIRST_LAYOUT.map((tile) => ({ ...tile })));
+  if (VALID_LAYOUTS.length === 0) return [];
+  return Array.from({ length: BOARD_COUNT }, (_, index) =>
+    VALID_LAYOUTS[index % VALID_LAYOUTS.length]!.map((tile) => ({ ...tile })),
+  );
 }
 
 function Board({ boards, spin }: { boards: Tile[][]; spin: number }) {
@@ -110,7 +136,7 @@ function Index() {
   const [spin, setSpin] = useState(0);
 
   const generate = useCallback(() => {
-    setBoards((current) => createBoards(current));
+    setBoards(createBoards());
     setSpin((s) => s + 1);
   }, []);
 
