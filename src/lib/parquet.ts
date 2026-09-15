@@ -50,6 +50,17 @@ function touches(a: Tile, b: Tile): boolean {
 }
 
 function valid(tiles: Tile[]): boolean {
+  // (iv) no 1x1 tile may occupy a corner of its 4x4 grid
+  for (const tile of tiles) {
+    if (
+      tile.kind === "single" &&
+      (tile.row === 0 || tile.row === SIZE - 1) &&
+      (tile.col === 0 || tile.col === SIZE - 1)
+    ) {
+      return false;
+    }
+  }
+
   for (let i = 0; i < tiles.length; i++) {
     for (let j = i + 1; j < tiles.length; j++) {
       const a = tiles[i]!;
@@ -65,7 +76,7 @@ function valid(tiles: Tile[]): boolean {
   return true;
 }
 
-/** All layouts: centred 2x2 plus 2 horizontal, 2 vertical and 4 single tiles. */
+/** All layouts satisfying the placement, contact, and corner rules. */
 export function allLayouts(): Tile[][] {
   const centre: Tile = { id: 0, kind: "square", row: 1, col: 1, height: 2, width: 2 };
   const occupied = new Set(cellsOf(centre));
