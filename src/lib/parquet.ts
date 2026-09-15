@@ -35,7 +35,7 @@ function touches(a: Tile, b: Tile): boolean {
   for (const cell of cellsOf(a)) {
     const r = Math.floor(cell / SIZE);
     const c = cell % SIZE;
-    const neighbours = [
+    const neighbours: Array<[number, number]> = [
       [r - 1, c],
       [r + 1, c],
       [r, c - 1],
@@ -52,8 +52,8 @@ function touches(a: Tile, b: Tile): boolean {
 function valid(tiles: Tile[]): boolean {
   for (let i = 0; i < tiles.length; i++) {
     for (let j = i + 1; j < tiles.length; j++) {
-      const a = tiles[i];
-      const b = tiles[j];
+      const a = tiles[i]!;
+      const b = tiles[j]!;
       if (!touches(a, b)) continue;
       // (ii) no 1x2 touches any 2x1
       const pair = [a.kind, b.kind];
@@ -135,15 +135,15 @@ export const layoutCount = LAYOUTS.length;
 export function randomLayout(previous?: Tile[]): Tile[] {
   if (LAYOUTS.length === 0) return [];
   if (LAYOUTS.length === 1 || !previous) {
-    return LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
+    return LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)]!;
   }
   const key = (tiles: Tile[]) =>
     tiles.map((t) => `${t.kind}${t.row}${t.col}`).sort().join("|");
   const prevKey = key(previous);
-  let candidate = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
+  let candidate = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)]!;
   let guard = 0;
   while (key(candidate) === prevKey && guard++ < 20) {
-    candidate = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)];
+    candidate = LAYOUTS[Math.floor(Math.random() * LAYOUTS.length)]!;
   }
   return candidate;
 }
