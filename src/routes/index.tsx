@@ -10,13 +10,13 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Generate 4x4 parquet grids from nine tiles: one 2x2 centre, two 1x2, two 2x1 and four 1x1 pieces, following strict no-touch rules.",
+          "Generate a 12x12 parquet puzzle made from nine randomized 4x4 tile grids, each following strict placement and no-touch rules.",
       },
       { property: "og:title", content: "Parquet Sudoku — Random Tile Grid Generator" },
       {
         property: "og:description",
         content:
-          "Press generate to lay nine parquet tiles into a 4x4 grid under three placement rules.",
+          "Generate nine randomized parquet puzzles together as one seamless 12x12 grid.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
