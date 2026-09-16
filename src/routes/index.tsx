@@ -55,141 +55,32 @@ function shuffle<T>(items: T[]): T[] {
   return shuffled;
 }
 
-function createBoards(randomize = true): Tile[][] {
-  if (VALID_LAYOUTS.length === 0) return [];
-
-  // Build each 4×4 section from its own layout choice. Repeating the full set
-  // before shuffling guarantees visible variety even though only three valid
-  // arrangements exist and nine sections must be filled.
-  const candidates = Array.from(
-    { length: BOARD_COUNT },
-    (_, index) => VALID_LAYOUTS[index % VALID_LAYOUTS.length]!,
-  );
-
-  const selected = randomize ? shuffle(candidates) : candidates;
-  return selected.map((layout) => layout.map((tile) => ({ ...tile })));
-}
-
-function numberBoards(boards: Tile[][], randomize: boolean): NumberedTile[][] | null {
-  const flatTiles = boards.flatMap((board, region) => {
-    const boardRow = Math.floor(region / 3);
-    const boardCol = region % 3;
-    return board.map((tile) => ({
-      ...tile,
-      row: tile.row + boardRow * GRID_SIZE,
-      col: tile.col + boardCol * GRID_SIZE,
-      region,
-    }));
-  });
-
-  if (flatTiles.length !== 81) return null;
-
-  const groups: number[][] = [];
-  for (let row = 0; row < COMBINED_SIZE; row++) {
-    groups.push(
-      flatTiles.flatMap((tile, index) =>
-        row >= tile.row && row < tile.row + tile.height ? [index] : [],
-      ),
-    );
-  }
-  for (let col = 0; col < COMBINED_SIZE; col++) {
-    groups.push(
-      flatTiles.flatMap((tile, index) =>
-        col >= tile.col && col < tile.col + tile.width ? [index] : [],
-      ),
-    );
-  }
-  for (let region = 0; region < BOARD_COUNT; region++) {
-    groups.push(
-      flatTiles.flatMap((tile, index) => (tile.region === region ? [index] : [])),
-    );
-  }
-
-  if (groups.some((group) => group.length !== DIGITS.length)) return null;
-
-  const solve = (domains: number[]): number[] | null => {
-    const reducedDomains = [...domains];
-    let changed = true;
-    while (changed) {
-      changed = false;
-
-      for (const group of groups) {
-        let assigned = 0;
-        for (const tileIndex of group) {
-          const domain = reducedDomains[tileIndex] ?? 0;
-          if (domain === 0) return null;
-          if ((domain & (domain - 1)) === 0) {
-            if (assigned & domain) return null;
-            assigned |= domain;
-          }
-        }
-
-        for (const tileIndex of group) {
-          const domain = reducedDomains[tileIndex] ?? 0;
-          if ((domain & (domain - 1)) === 0) continue;
-          const nextDomain = domain & ~assigned;
-          if (nextDomain === 0) return null;
-          if (nextDomain !== domain) {
-            reducedDomains[tileIndex] = nextDomain;
-            changed = true;
-          }
-        }
-
-        for (const digit of DIGITS) {
-          const bit = 1 << (digit - 1);
-          const possible = group.filter((tileIndex) => (reducedDomains[tileIndex] ?? 0) & bit);
-          if (possible.length === 0) return null;
-          if (possible.length === 1 && reducedDomains[possible[0] ?? 0] !== bit) {
-            reducedDomains[possible[0] ?? 0] = bit;
-            changed = true;
-          }
-        }
-      }
-    }
-
-    let bestIndex = -1;
-    let bestCount = 10;
-    for (let index = 0; index < reducedDomains.length; index++) {
-      const count = reducedDomains[index]?.toString(2).replaceAll("0", "").length ?? 0;
-      if (count === 0) return null;
-      if (count > 1 && count < bestCount) {
-        bestIndex = index;
-        bestCount = count;
-      }
-    }
-    if (bestIndex === -1) return reducedDomains;
-
-    const domain = reducedDomains[bestIndex] ?? 0;
-    const candidates = DIGITS.filter((digit) => domain & (1 << (digit - 1)));
-    for (const digit of randomize ? shuffle(candidates) : candidates) {
-      const bit = 1 << (digit - 1);
-      const next = [...reducedDomains];
-      next[bestIndex] = bit;
-      const solved = solve(next);
-      if (solved) return solved;
-    }
-    return null;
-  };
-
-  const solved = solve(Array.from({ length: flatTiles.length }, () => 0b111111111));
-  if (!solved) return null;
-
-  let offset = 0;
-  return boards.map((board) =>
-    board.map((tile) => {
-      const domain = solved[offset] ?? 1;
-      offset += 1;
-      return { ...tile, value: Math.log2(domain) + 1 };
-    }),
-  );
-}
+// A solved generalized-Sudoku template for the two valid parquet layouts.
+// Random digit relabeling and region-band permutations create a fresh valid grid instantly.
+const SOLUTION_LAYOUTS = [1, 1, 1, 0, 0, 0, 0, 0, 0];
+const SOLUTION_VALUES = [
+  3, 9, 4, 2, 7, 6, 8, 5, 1, 1, 6, 7, 3, 8, 5, 2, 4, 9, 4, 5, 8, 1, 2, 9, 7, 6, 3,
+  7, 1, 8, 9, 4, 3, 5, 2, 6, 8, 2, 4, 6, 3, 1, 9, 5, 7, 2, 3, 7, 5, 1, 4, 6, 9, 8,
+  9, 8, 5, 1, 7, 2, 3, 6, 4, 6, 9, 2, 4, 8, 7, 1, 3, 5, 5, 7, 6, 3, 2, 8, 4, 1, 9,
+];
 
 function createPuzzle(randomize: boolean): NumberedTile[][] {
-  for (let attempt = 0; attempt < 30; attempt++) {
-    const numbered = numberBoards(createBoards(randomize), randomize);
-    if (numbered) return numbered;
-  }
-  return [];
+  const digitMap = randomize ? shuffle(DIGITS) : DIGITS;
+  let valueIndex = 0;
+  const solved = SOLUTION_LAYOUTS.map((layoutIndex) => {
+    const layout = VALID_LAYOUTS[layoutIndex];
+    if (!layout) return [];
+    return layout.map((tile) => {
+      const original = SOLUTION_VALUES[valueIndex] ?? 1;
+      valueIndex += 1;
+      return { ...tile, value: digitMap[original - 1] ?? original };
+    });
+  });
+
+  if (!randomize) return solved;
+  const rowOrder = shuffle([0, 1, 2]);
+  const colOrder = shuffle([0, 1, 2]);
+  return rowOrder.flatMap((row) => colOrder.map((col) => solved[row * 3 + col] ?? []));
 }
 
 function Board({ boards, spin }: { boards: NumberedTile[][]; spin: number }) {
