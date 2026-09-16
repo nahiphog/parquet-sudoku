@@ -119,51 +119,65 @@ function numberBoards(boards: Tile[][], randomize: boolean): NumberedTile[][] | 
   });
 
   const solve = (domains: number[]): number[] | null => {
+    const reducedDomains = [...domains];
+    let changed = true;
+    while (changed) {
+      changed = false;
+
+      for (const group of groups) {
+        let assigned = 0;
+        for (const tileIndex of group) {
+          const domain = reducedDomains[tileIndex] ?? 0;
+          if (domain === 0) return null;
+          if ((domain & (domain - 1)) === 0) {
+            if (assigned & domain) return null;
+            assigned |= domain;
+          }
+        }
+
+        for (const tileIndex of group) {
+          const domain = reducedDomains[tileIndex] ?? 0;
+          if ((domain & (domain - 1)) === 0) continue;
+          const nextDomain = domain & ~assigned;
+          if (nextDomain === 0) return null;
+          if (nextDomain !== domain) {
+            reducedDomains[tileIndex] = nextDomain;
+            changed = true;
+          }
+        }
+
+        for (const digit of DIGITS) {
+          const bit = 1 << (digit - 1);
+          const possible = group.filter((tileIndex) => (reducedDomains[tileIndex] ?? 0) & bit);
+          if (possible.length === 0) return null;
+          if (possible.length === 1 && reducedDomains[possible[0] ?? 0] !== bit) {
+            reducedDomains[possible[0] ?? 0] = bit;
+            changed = true;
+          }
+        }
+      }
+    }
+
     let bestIndex = -1;
     let bestCount = 10;
-    for (let index = 0; index < domains.length; index++) {
-      const count = domains[index]?.toString(2).replaceAll("0", "").length ?? 0;
+    for (let index = 0; index < reducedDomains.length; index++) {
+      const count = reducedDomains[index]?.toString(2).replaceAll("0", "").length ?? 0;
       if (count === 0) return null;
       if (count > 1 && count < bestCount) {
         bestIndex = index;
         bestCount = count;
       }
     }
-    if (bestIndex === -1) return domains;
+    if (bestIndex === -1) return reducedDomains;
 
-    const domain = domains[bestIndex] ?? 0;
+    const domain = reducedDomains[bestIndex] ?? 0;
     const candidates = DIGITS.filter((digit) => domain & (1 << (digit - 1)));
     for (const digit of randomize ? shuffle(candidates) : candidates) {
       const bit = 1 << (digit - 1);
-      const next = [...domains];
+      const next = [...reducedDomains];
       next[bestIndex] = bit;
-      const queue = [bestIndex];
-      let valid = true;
-
-      while (queue.length > 0 && valid) {
-        const assigned = queue.pop();
-        if (assigned === undefined) break;
-        const assignedDomain = next[assigned] ?? 0;
-        if ((assignedDomain & (assignedDomain - 1)) !== 0) continue;
-        for (const peer of peers[assigned] ?? []) {
-          const peerDomain = next[peer] ?? 0;
-          if ((peerDomain & assignedDomain) === 0) continue;
-          const reduced = peerDomain & ~assignedDomain;
-          if (reduced === 0) {
-            valid = false;
-            break;
-          }
-          if (reduced !== peerDomain) {
-            next[peer] = reduced;
-            if ((reduced & (reduced - 1)) === 0) queue.push(peer);
-          }
-        }
-      }
-
-      if (valid) {
-        const solved = solve(next);
-        if (solved) return solved;
-      }
+      const solved = solve(next);
+      if (solved) return solved;
     }
     return null;
   };
