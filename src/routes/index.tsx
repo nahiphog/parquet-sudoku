@@ -107,17 +107,6 @@ function numberBoards(boards: Tile[][], randomize: boolean): NumberedTile[][] | 
 
   if (groups.some((group) => group.length !== DIGITS.length)) return null;
 
-  const peers = flatTiles.map((_, tileIndex) => {
-    const related = new Set<number>();
-    for (const group of groups) {
-      if (!group.includes(tileIndex)) continue;
-      for (const peer of group) {
-        if (peer !== tileIndex) related.add(peer);
-      }
-    }
-    return [...related];
-  });
-
   const solve = (domains: number[]): number[] | null => {
     const reducedDomains = [...domains];
     let changed = true;
