@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Info, LoaderCircle, Moon, RefreshCw, Sun } from "lucide-react";
+import { ArrowLeft, ArrowRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { GRID_SIZE, allLayouts, type Tile } from "@/lib/parquet";
 import { buildPuzzleModel, digPuzzle } from "@/lib/parquet-solver";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
