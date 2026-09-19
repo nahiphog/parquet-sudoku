@@ -119,6 +119,8 @@ function Guide() {
   );
 }
 
+const TARGETS = [8, 9, 10, 11, 12, 13, 14];
+
 function Index() {
   const initial = createSolution(false);
   const [solution, setSolution] = useState(initial);
@@ -126,6 +128,9 @@ function Index() {
   const [spin, setSpin] = useState(0);
   const [elapsed, setElapsed] = useState<number | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [hunting, setHunting] = useState(false);
+  const [attempts, setAttempts] = useState<number | null>(null);
+  const [target, setTarget] = useState(12);
   const [dark, setDark] = useState(false);
   const generationRef = useRef(0);
 
@@ -147,6 +152,7 @@ function Index() {
     generationRef.current = generation;
     setGenerating(true);
     setElapsed(null);
+    setAttempts(null);
     const started = performance.now();
     const nextSolution = createSolution(true);
     const solutionValues = nextSolution.flatMap((board) => board.map((tile) => tile.value));
@@ -160,7 +166,48 @@ function Index() {
     setGenerating(false);
   }, []);
 
+  const hunt = useCallback(async () => {
+    const generation = generationRef.current + 1;
+    generationRef.current = generation;
+    setGenerating(true);
+    setHunting(true);
+    setElapsed(null);
+    setAttempts(0);
+    const started = performance.now();
+    let tries = 0;
+
+    while (generationRef.current === generation) {
+      tries += 1;
+      const nextSolution = createSolution(true);
+      const solutionValues = nextSolution.flatMap((board) => board.map((tile) => tile.value));
+      const model = buildPuzzleModel(nextSolution);
+      const dug = await digPuzzle(solutionValues, model, () => generationRef.current === generation);
+      if (generationRef.current !== generation) return;
+      const clues = dug.filter((value) => value > 0).length;
+      setAttempts(tries);
+      if (clues <= target) {
+        setSolution(nextSolution);
+        setPuzzleValues(dug);
+        setSpin((value) => value + 1);
+        setElapsed(performance.now() - started);
+        break;
+      }
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+
+    if (generationRef.current !== generation) return;
+    setHunting(false);
+    setGenerating(false);
+  }, [target]);
+
+  const stop = () => {
+    generationRef.current += 1;
+    setHunting(false);
+    setGenerating(false);
+  };
+
   const solutionValues = solution.flatMap((board) => board.map((tile) => tile.value));
+  const clueCount = puzzleValues.filter((value) => value > 0).length;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -181,12 +228,44 @@ function Index() {
           <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Puzzle</h2><Board boards={solution} values={puzzleValues} spin={spin} label="Parquet Sudoku puzzle" /></section>
           <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Solution</h2><Board boards={solution} values={solutionValues} spin={spin} label="Completed Parquet Sudoku solution" /></section>
         </div>
-        <Button type="button" onClick={generate} disabled={generating} size="lg" className="h-12 rounded-full px-8 font-semibold shadow-board">
-          {generating ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
-          {generating ? "Generating puzzle…" : "Generate a grid"}
-        </Button>
-        <p className="h-5 text-sm text-muted-foreground" aria-live="polite">{generating ? "Checking for a unique solution…" : elapsed === null ? "" : `Generated in ${(elapsed / 1000).toFixed(2)} seconds`}</p>
+
+        <p className="text-sm font-semibold" aria-live="polite">Given cells: {clueCount}</p>
+
+        <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <Button type="button" onClick={generate} disabled={generating} size="lg" className="h-12 rounded-full px-8 font-semibold shadow-board">
+            {generating && !hunting ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
+            {generating && !hunting ? "Generating puzzle…" : "Generate a grid"}
+          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={String(target)} onValueChange={(value) => setTarget(Number(value))} disabled={generating}>
+              <SelectTrigger className="h-12 w-28 rounded-full" aria-label="Target number of given cells"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {TARGETS.map((value) => <SelectItem key={value} value={String(value)}>{value} cells</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {hunting ? (
+              <Button type="button" onClick={stop} variant="destructive" size="lg" className="h-12 rounded-full px-6 font-semibold">
+                <Square aria-hidden="true" />Stop searching
+              </Button>
+            ) : (
+              <Button type="button" onClick={hunt} disabled={generating} variant="secondary" size="lg" className="h-12 rounded-full px-6 font-semibold">
+                <Target aria-hidden="true" />Hunt for target
+              </Button>
+            )}
+          </div>
+        </div>
+
+        <p className="min-h-5 text-center text-sm text-muted-foreground" aria-live="polite">
+          {hunting
+            ? `Searching for ${target} given cells or fewer — ${attempts ?? 0} puzzles generated…`
+            : generating
+              ? "Checking for a unique solution…"
+              : elapsed === null
+                ? ""
+                : `${attempts === null ? "" : `${attempts} puzzles generated · `}Generated in ${(elapsed / 1000).toFixed(2)} seconds`}
+        </p>
       </div>
     </main>
   );
+
 }
