@@ -50,18 +50,16 @@ export function layoutsFor(version: PuzzleVersion): CellTile[][] {
   return version === "v1" ? V1_LAYOUTS : V2_LAYOUTS;
 }
 
-/** Nine 4x4 sections, each an independently chosen valid layout. */
-export function randomBoards(version: PuzzleVersion): CellTile[][] {
-  const layouts = layoutsFor(version);
-  return Array.from(
-    { length: 9 },
-    () => layouts[Math.floor(Math.random() * layouts.length)] ?? [],
-  );
-}
+/** Section pattern known to admit complete 1-9 fillings for each version. */
+const SECTION_PATTERN: Record<PuzzleVersion, number[]> = {
+  v1: [1, 1, 1, 0, 0, 0, 0, 0, 0],
+  v2: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+};
 
-export function initialBoards(version: PuzzleVersion): CellTile[][] {
+/** The nine 4x4 sections of a combined grid. */
+export function boardsFor(version: PuzzleVersion): CellTile[][] {
   const layouts = layoutsFor(version);
-  return Array.from({ length: 9 }, (_, index) => layouts[index % layouts.length] ?? []);
+  return (SECTION_PATTERN[version] ?? []).map((index) => layouts[index] ?? []);
 }
 
 export type PlacedTile = {
