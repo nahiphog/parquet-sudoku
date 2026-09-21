@@ -1,4 +1,5 @@
 import { GRID_SIZE, type Tile } from "@/lib/parquet";
+import type { PlacedTile } from "@/lib/parquet-layouts";
 
 const DIGIT_MASK = 0x1ff;
 
