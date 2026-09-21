@@ -1,4 +1,5 @@
 import { GRID_SIZE, type Tile } from "@/lib/parquet";
+import type { PlacedTile } from "@/lib/parquet-layouts";
 
 const DIGIT_MASK = 0x1ff;
 
@@ -135,4 +136,93 @@ export async function digPuzzle(
 
 export function hasUniqueSolution(values: number[], model: PuzzleModel): boolean {
   return countSolutions(values, model, 2) === 1;
+}
+
+/** Peer groups derived from cell-based tiles already placed in 12x12 coordinates. */
+export function buildModelFromPlaced(tiles: PlacedTile[]): PuzzleModel {
+  const rowGroups = new Map<number, number[]>();
+  const colGroups = new Map<number, number[]>();
+  const regionGroups = new Map<number, number[]>();
+
+  const push = (map: Map<number, number[]>, key: number, index: number) => {
+    const group = map.get(key) ?? [];
+    if (!group.includes(index)) group.push(index);
+    map.set(key, group);
+  };
+
+  tiles.forEach((tile, index) => {
+    for (const [row, col] of tile.cells) {
+      push(rowGroups, row, index);
+      push(colGroups, col, index);
+    }
+    push(regionGroups, tile.boardIndex, index);
+  });
+
+  const peerSets = Array.from({ length: tiles.length }, () => new Set<number>());
+  for (const group of [...rowGroups.values(), ...colGroups.values(), ...regionGroups.values()]) {
+    for (const index of group) {
+      for (const peer of group) {
+        if (peer !== index) peerSets[index]?.add(peer);
+      }
+    }
+  }
+
+  return { peers: peerSets.map((peers) => [...peers]) };
+}
+
+/** A random complete assignment of 1-9 respecting every peer group, or null. */
+export function randomSolution(model: PuzzleModel): number[] | null {
+  const total = model.peers.length;
+  const values = new Array<number>(total).fill(0);
+  let steps = 0;
+
+  const search = (): boolean => {
+    if (steps++ > 400_000) return false;
+    let selected = -1;
+    let selectedMask = 0;
+    let fewest = 10;
+
+    for (let index = 0; index < total; index += 1) {
+      if (values[index] !== 0) continue;
+      let used = 0;
+      for (const peer of model.peers[index] ?? []) {
+        const value = values[peer] ?? 0;
+        if (value > 0) used |= 1 << (value - 1);
+      }
+      const mask = DIGIT_MASK & ~used;
+      const count = bitCount(mask);
+      if (count === 0) return false;
+      if (count < fewest) {
+        selected = index;
+        selectedMask = mask;
+        fewest = count;
+        if (count === 1) break;
+      }
+    }
+
+    if (selected === -1) return true;
+
+    const choices: number[] = [];
+    let bits = selectedMask;
+    while (bits) {
+      const bit = bits & -bits;
+      choices.push(32 - Math.clz32(bit));
+      bits ^= bit;
+    }
+    for (let i = choices.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const a = choices[i]!;
+      choices[i] = choices[j]!;
+      choices[j] = a;
+    }
+
+    for (const choice of choices) {
+      values[selected] = choice;
+      if (search()) return true;
+      values[selected] = 0;
+    }
+    return false;
+  };
+
+  return search() ? values : null;
 }
