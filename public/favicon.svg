@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="4" fill="#1a1a2e"/>
+  <!-- 2x2 center tile -->
+  <rect x="8" y="8" width="16" height="16" fill="#e94560" rx="1"/>
+  <!-- Four 1x1 corner tiles -->
+  <rect x="2" y="2" width="5" height="5" fill="#4ecdc4" rx="1"/>
+  <rect x="25" y="2" width="5" height="5" fill="#4ecdc4" rx="1"/>
+  <rect x="2" y="25" width="5" height="5" fill="#4ecdc4" rx="1"/>
+  <rect x="25" y="25" width="5" height="5" fill="#4ecdc4" rx="1"/>
+  <!-- 1x2 and 2x1 tiles -->
+  <rect x="2" y="8" width="5" height="7" fill="#ffe66d" rx="1"/>
+  <rect x="25" y="17" width="5" height="7" fill="#ffe66d" rx="1"/>
+  <rect x="8" y="2" width="7" height="5" fill="#95e1d3" rx="1"/>
+  <rect x="17" y="25" width="7" height="5" fill="#95e1d3" rx="1"/>
+</svg>
