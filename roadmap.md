@@ -7,3 +7,4 @@
 - [x] Show puzzle beside solution with generation timing
 - [x] Verify desktop and mobile behavior
 - [x] Add version 2 layout (L-shaped tiles) with a layout picker
+- [x] Snyder notation (from sudokUI techniques) with show/hide toggle

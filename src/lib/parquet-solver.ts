@@ -226,3 +226,29 @@ export function randomSolution(model: PuzzleModel): number[] | null {
 
   return search() ? values : null;
 }
+/**
+ * Snyder notation (technique from github.com/AImenes/sudokUI): for each region,
+ * a digit whose only possible places are exactly two tiles is marked in both.
+ */
+export function snyderMarks(values: number[], model: PuzzleModel, tiles: PlacedTile[]): number[][] {
+  const marks = values.map(() => [] as number[]);
+  const candidates = values.map((value, index) => {
+    if (value) return 0;
+    let used = 0;
+    for (const peer of model.peers[index] ?? []) {
+      const v = values[peer] ?? 0;
+      if (v > 0) used |= 1 << (v - 1);
+    }
+    return DIGIT_MASK & ~used;
+  });
+  const regions = new Map<number, number[]>();
+  tiles.forEach((tile, index) => regions.set(tile.boardIndex, [...(regions.get(tile.boardIndex) ?? []), index]));
+  for (const members of regions.values()) {
+    for (let digit = 1; digit <= 9; digit += 1) {
+      if (members.some((i) => values[i] === digit)) continue;
+      const spots = members.filter((i) => (candidates[i] ?? 0) & (1 << (digit - 1)));
+      if (spots.length === 2) for (const i of spots) marks[i]?.push(digit);
+    }
+  }
+  return marks;
+}
