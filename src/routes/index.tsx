@@ -41,7 +41,9 @@ const TARGETS = [8, 9, 10, 11, 12, 13, 14];
 const PENPA_URL =
   "https://swaroopg92.github.io/penpa-edit/?m=solve&p=7Vdbb9tGE33Xr1gQ6Ns24F5490uRuklfEjf9nA9BIBgBLdOxEEp0SCqOZSS/PWdmhxEpKUDRom+FJPLwaGfm7OzuaNR93JZtpY2ldxLrWBu8UiD6uCzhD/H0er3q62quXpXtx23Vq4vtdfNhq59u+9umnauLcq3Oyru7ulqXm59fPGyqTmn9fFXXqiqXt6pa3/UPalnh+X7V36pSbbbrq6pVN22zVkb1jSpU16j+tuyDRXODh0oZq9rmvvvJnhFcNvV2velUubnG+LZ6v2rwtGw2fbkCqD5V7cPgufpcLvv6QTWbZfVEXTTriuN3qrsrN6pctk3Xqf6+Yf+qaRlLgCf6j3N9U9ZdNVtIAi5ni8hEOrL4mOjy6+78KxPF5exx97/54+7dfHH5Re/+v4f5Hl7MH3E9nzGLo3mi8hFSDX50ZEriPB7wnsi4HogkpiIYk8Ykx04MSY/8GJscmjl2M/IsXHsJx0z7CfbMzZmPyMrawwx+ZjhSY1iWcOzGnl2GVshfXuGPSdjhq1GnhPPzMgqCdkYWSUJz2KkOYtZzygbmXEHfjLDaf7uB8tjeJHe8vU5Xy1fX2MN9c7x9Te+xnxN+PqCxzzD0tos07ZAIIsEFE67GOKBcdeOloOwxbHySAVhb7Qj8YSTDMct2OKuXS62eaE9LQEw7trbYIu79rR8hF2mfRJscdc+DbYePr349IiFZ7GFH9HgoQ3PIRY041k0QI/MxaXQmYlOD/2p6LeYlxdbA8022NoCtpRwwrlBTsQWOh1tMMY5sMRy5AfLyv5Resb58VawBRY9HrHolDD2ew2kzWPpGafAg2bE9RLXIy5tKpo76p4Xnd4gPybE8iYGHuXHBG0+zr/nx8fIbRx8+jgFltzSGtH2Y+xHa0e5DZp9jLixxI0RN6a42ERveCud8dXThiqQAHKMLYo7EgwjxpjcmCchwLZAAkg48ZiQszIGE5rwNFEej8QbCGQetm4Yg6SOeTrfhFMkns4o4Qy2hYwhnCNJjJHgYUwCnk458/BTiH/+bRGfGWINYxLihzHQmYt+wlnQ7DL6bQpjvMHiuGCLOza48A6JH/NUdAlbLAJtOuZhmwxjgGkDMsYiD2MsFpk2HWFsOp8Ij8044WkzUj4xF1sEP7awoRiQZkubVPKDg+vskH+HMcHWWdqwMkeLHNJhojF5jDFBv83JZ1hrFyMPseTK0eEQng4lVXpeL8RKxWeBnNBGZoxYdCgJ04FIRUMKn3S4eQxtUvGJIuRkXnwQE+FRbFwitjkdAomVwycVMB4Pn4nknzY+/VJxbnHIqJgRTsCnwntaF1kLKnKSK59AfyZ8glhUzNgn1ssGDXxw7bDWxMt6YV5e9hsXRdaPQ5ZyBc/oN3o2W2DXUAd0/Er+4+lFLdB5aK7Om3Zd1miF5PllhDYo6pr6Xbdtb8plFc25fdLMhY4smvftVpi6ae7q1WY6bPV+07TVya+IrK7fnxp/1bTX5Hz0xX1Z1xMitLoTarlql/WU6tvV5Lls0RpOmHXZ306Iq7JHW9zdru6mnqpNPxXQl1OJ5YfyINp6P+cvs+hzxJ8FDnyqDTeZxXz3VO9+D83Y0Ifq3Z/oMl/Od+fUZC4itDPck/AgC/gsNDkE3/D3hM6ko4uBzwUDvgUMeXn3IjCv5ovdax1RnF/ZmmC0bj5BatBBz8tmfYXJLKJROsI3Hf9NGBpIarKe/liuE7kCg1xCJ+QW/77c4vJLWIj473T4vxx2+CMidPgj4kRD/5fa98Nm3dCPwMSPNOujWNKsT5ipwH/eCh/3MgfF9rNUi6Y9WTBADzVjyp4sDsIf1QfwR5WAAh4XA7An6gHYw5IA6rgqgDwqDOB+UBvI62F5IFWHFYJCHRUJCjWuE4vL2Tc=&a=RZHRrQNBCAN7uW8+lmVhoZYo/bcRsO/pSZGsC3NjQj6fr/x/Hl1H9iOdV2zypMSkqyQyOI8jjrxyJ++WQibn6ZxnyJmsS08lPNZ+nVTF96YO7pjDc6zQf47B71zHWz+v+1+Q9m6ZcegCHUp7KLePQy7Oy7mhLe7LtRZc+8YbheUvbQ3NT8q1AeVieXbZSJMbpm8403nBjEU8XrxtwG9AnonqUjyV8p612Vl7c2wLG5fxjmW8b+XL5cu1Dlw1Nv/l9wc=";
 
-function CellBoard({ tiles, values, spin, label, marks }: { tiles: PlacedTile[]; values: number[]; spin: number; label: string; marks?: number[][] | undefined }) {
+function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { tiles: PlacedTile[]; values: number[]; spin: number; label: string; marks?: number[][] | undefined; selected?: number | null; onSelect?: (index: number) => void }) {
+  const peers = useMemo(() => buildModelFromPlaced(tiles).peers, [tiles]);
+  const seen = useMemo(() => new Set(selected == null ? [] : peers[selected] ?? []), [peers, selected]);
   const owner = useMemo(() => {
     const map = new Map<number, number>();
     tiles.forEach((tile, index) => {
@@ -73,7 +75,6 @@ function CellBoard({ tiles, values, spin, label, marks }: { tiles: PlacedTile[];
             gridTemplateColumns: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
             gridTemplateRows: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
           }}
-          aria-hidden="true"
         >
           {Array.from({ length: COMBINED_SIZE * COMBINED_SIZE }).map((_, cell) => {
             const row = Math.floor(cell / COMBINED_SIZE);
@@ -84,7 +85,8 @@ function CellBoard({ tiles, values, spin, label, marks }: { tiles: PlacedTile[];
             return (
               <div
                 key={cell}
-                className="border-solid border-foreground/60 bg-card"
+                onClick={onSelect && self !== undefined ? () => onSelect(self) : undefined}
+                className={`border-solid border-foreground/60 ${onSelect ? "cursor-pointer" : ""} ${self !== undefined && self === selected ? "bg-primary/35" : self !== undefined && seen.has(self) ? "bg-primary/15" : "bg-card"}`}
                 style={{
                   borderTopWidth: sameAs(row - 1, col) ? 0 : 1,
                   borderBottomWidth: sameAs(row + 1, col) ? 0 : 1,
@@ -175,6 +177,7 @@ function Index() {
   const [target, setTarget] = useState(12);
   const [dark, setDark] = useState(false);
   const [showSnyder, setShowSnyder] = useState(false);
+  const [selected, setSelected] = useState<number | null>(null);
   const generationRef = useRef(0);
 
   useEffect(() => {
@@ -201,6 +204,7 @@ function Index() {
     if (generationRef.current !== generation) return;
     if (next) {
       setPuzzle(next);
+      setSelected(null);
       setSpin((value) => value + 1);
       setElapsed(performance.now() - started);
     }
@@ -235,6 +239,7 @@ function Index() {
       setAttempts(tries);
       if (next && next.clues.filter((value) => value > 0).length <= target) {
         setPuzzle(next);
+      setSelected(null);
         setSpin((value) => value + 1);
         setElapsed(performance.now() - started);
         break;
@@ -257,6 +262,13 @@ function Index() {
   const clueValues = puzzle?.clues ?? [];
   const solutionValues = puzzle?.solution ?? [];
   const clueCount = clueValues.filter((value) => value > 0).length;
+  const selectedLabel = (() => {
+    const tile = selected == null ? undefined : tiles[selected];
+    if (!tile) return "Click a cell to see what it sees";
+    const rows = [...new Set(tile.cells.map(([r]) => r + 1))].sort((a, b) => a - b);
+    const cols = [...new Set(tile.cells.map(([, c]) => c + 1))].sort((a, b) => a - b);
+    return `Selected: ${tile.cells.map(([r, c]) => `R${r + 1}C${c + 1}`).join(", ")} · rows ${rows.join(", ")} · columns ${cols.join(", ")} · region ${tile.boardIndex + 1}`;
+  })();
   const marks = useMemo(
     () => (puzzle && showSnyder ? snyderMarks(puzzle.clues, buildModelFromPlaced(puzzle.tiles), puzzle.tiles) : undefined),
     [puzzle, showSnyder],
@@ -278,7 +290,8 @@ function Index() {
 
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-7 px-4 py-8 sm:px-6">
         <div className="grid w-full gap-8 lg:grid-cols-2">
-          <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Puzzle</h2><CellBoard tiles={tiles} values={clueValues} spin={spin} label="Parquet Sudoku puzzle" marks={marks} /></section>
+          <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Puzzle</h2><CellBoard tiles={tiles} values={clueValues} spin={spin} label="Parquet Sudoku puzzle" marks={marks} selected={selected} onSelect={(i) => setSelected((cur) => (cur === i ? null : i))} />
+            <p className="min-h-5 text-center text-sm font-semibold" aria-live="polite">{selectedLabel}</p></section>
           <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Solution</h2><CellBoard tiles={tiles} values={solutionValues} spin={spin} label="Completed Parquet Sudoku solution" /></section>
         </div>
 
