@@ -117,7 +117,7 @@ function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { 
             return (
               <span
                 key={`m-${index}`}
-                className="absolute text-[0.5rem] leading-none text-primary sm:text-[0.65rem]"
+                className="absolute max-w-[calc(100%/12-4px)] break-all text-[0.45rem] leading-none text-primary sm:text-[0.55rem]"
                 style={{ top: `calc(${(first[0] / COMBINED_SIZE) * 100}% + 2px)`, left: `calc(${(first[1] / COMBINED_SIZE) * 100}% + 2px)` }}
               >
                 {digitsHere.join("")}
