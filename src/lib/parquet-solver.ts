@@ -267,8 +267,10 @@ export function randomSolution(model: PuzzleModel): number[] | null {
     }
     for (let i = choices.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
-      const a = choices[i]!;
-      choices[i] = choices[j]!;
+      const a = choices[i];
+      const b = choices[j];
+      if (a === undefined || b === undefined) continue;
+      choices[i] = b;
       choices[j] = a;
     }
 
