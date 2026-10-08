@@ -74,8 +74,9 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
     const bit = 1 << (digit - 1);
     const affected = [index];
     for (const peer of model.peers[index] ?? []) {
-      if (values[peer] || !(masks[peer] & bit)) continue;
-      masks[peer] &= ~bit;
+      const peerMask = masks[peer] ?? 0;
+      if (values[peer] || !(peerMask & bit)) continue;
+      masks[peer] = peerMask & ~bit;
       affected.push(peer);
     }
     record(technique, title, explanation, affected);
@@ -85,8 +86,9 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
     const affected: number[] = [];
     for (const [index, removalMask] of removals) {
       if (values[index]) continue;
-      const next = masks[index] & ~removalMask;
-      if (next === masks[index] || next === 0) continue;
+      const current = masks[index] ?? 0;
+      const next = current & ~removalMask;
+      if (next === current || next === 0) continue;
       masks[index] = next;
       affected.push(index);
     }
@@ -103,7 +105,7 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
           if (bitCount(union) !== size) continue;
           const cellSet = new Set(cells);
           const removals = group.tiles.filter((index) => !cellSet.has(index)).map((index) => [index, union] as [number, number]);
-          if (eliminate(removals, "naked-subset", `Naked ${size === 2 ? "Pair" : size === 3 ? "Triple" : "Quad"}`, `Digits ${digits(union).join(", ")} are confined to ${size} tiles in ${group.label}.`, [...cells])) return true;
+          if (eliminate(removals, "naked-subset", `Naked ${size === 2 ? "Pair" : size === 3 ? "Triple" : "Quad"}`, `Digits ${digits(union).join(", ")} are confined to ${size} tiles in ${group.label}.`)) return true;
         }
       }
     }
@@ -116,10 +118,10 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
       for (let size = 2; size <= 4; size += 1) {
         for (const bits of combinations(digitBits, size)) {
           const subsetMask = bits.reduce((mask, bit) => mask | bit, 0);
-          const cells = group.tiles.filter((index) => !values[index] && (masks[index] & subsetMask));
-          if (cells.length !== size || bits.some((bit) => !cells.some((index) => masks[index] & bit))) continue;
-          const removals = cells.map((index) => [index, masks[index] & ~subsetMask] as [number, number]);
-          if (eliminate(removals, "hidden-subset", `Hidden ${size === 2 ? "Pair" : size === 3 ? "Triple" : "Quad"}`, `Only these ${size} tiles in ${group.label} can contain ${digits(subsetMask).join(", ")}.`, cells)) return true;
+          const cells = group.tiles.filter((index) => !values[index] && ((masks[index] ?? 0) & subsetMask));
+          if (cells.length !== size || bits.some((bit) => !cells.some((index) => (masks[index] ?? 0) & bit))) continue;
+          const removals = cells.map((index) => [index, (masks[index] ?? 0) & ~subsetMask] as [number, number]);
+          if (eliminate(removals, "hidden-subset", `Hidden ${size === 2 ? "Pair" : size === 3 ? "Triple" : "Quad"}`, `Only these ${size} tiles in ${group.label} can contain ${digits(subsetMask).join(", ")}.`)) return true;
         }
       }
     }
@@ -132,14 +134,14 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
       if (!first) continue;
       for (let digit = 1; digit <= 9; digit += 1) {
         const bit = 1 << (digit - 1);
-        const places = first.tiles.filter((index) => !values[index] && (masks[index] & bit));
+        const places = first.tiles.filter((index) => !values[index] && ((masks[index] ?? 0) & bit));
         if (places.length < 2) continue;
         for (let secondIndex = 0; secondIndex < model.groups.length; secondIndex += 1) {
           if (firstIndex === secondIndex) continue;
           const second = model.groups[secondIndex];
           if (!second || first.kind === second.kind || !places.every((index) => second.tiles.includes(index))) continue;
           const removals = second.tiles.filter((index) => !places.includes(index)).map((index) => [index, bit] as [number, number]);
-          if (eliminate(removals, "locked-candidates", "Locked Candidates", `${digit} is locked into the overlap of ${first.label} and ${second.label}.`, places)) return true;
+          if (eliminate(removals, "locked-candidates", "Locked Candidates", `${digit} is locked into the overlap of ${first.label} and ${second.label}.`)) return true;
         }
       }
     }
@@ -155,14 +157,14 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
         for (let size = 2; size <= 4; size += 1) {
           for (const baseSet of combinations(bases.map((_, index) => index), size)) {
             const baseGroups = baseSet.map((index) => bases[index]).filter((group) => group !== undefined);
-            const candidateTiles = new Set(baseGroups.flatMap((group) => group.tiles.filter((index) => !values[index] && (masks[index] & bit))));
+            const candidateTiles = new Set(baseGroups.flatMap((group) => group.tiles.filter((index) => !values[index] && ((masks[index] ?? 0) & bit))));
             if (!candidateTiles.size) continue;
             const crossSet = crosses.filter((group) => [...candidateTiles].some((index) => group.tiles.includes(index)));
             if (crossSet.length !== size || baseGroups.some((group) => !group.tiles.some((index) => candidateTiles.has(index)))) continue;
             const baseTiles = new Set(baseGroups.flatMap((group) => group.tiles));
             const removals = crossSet.flatMap((group) => group.tiles.filter((index) => !baseTiles.has(index)).map((index) => [index, bit] as [number, number]));
             const name = size === 2 ? "X-Wing" : size === 3 ? "Swordfish" : "Jellyfish";
-            if (eliminate(removals, "fish", name, `${digit} is confined to ${size} matching ${baseKind} and ${crossKind} groups.`, [...candidateTiles])) return true;
+            if (eliminate(removals, "fish", name, `${digit} is confined to ${size} matching ${baseKind} and ${crossKind} groups.`)) return true;
           }
         }
       }
@@ -187,7 +189,7 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
     for (const group of model.groups) {
       for (let digit = 1; digit <= 9; digit += 1) {
         const bit = 1 << (digit - 1);
-        const places = group.tiles.filter((index) => !values[index] && (masks[index] & bit));
+        const places = group.tiles.filter((index) => !values[index] && ((masks[index] ?? 0) & bit));
         if (places.length === 1) {
           const index = places[0];
           if (index !== undefined) place(index, digit, "hidden-single", "Hidden Single", `${digit} can appear in only one tile in ${group.label}.`);

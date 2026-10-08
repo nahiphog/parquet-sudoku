@@ -68,5 +68,13 @@ export const TECHNIQUES: Technique[] = [
 ];
 
 export function techniqueById(id: TechniqueId): Technique {
-  return TECHNIQUES.find((technique) => technique.id === id) ?? TECHNIQUES[0];
+  const found = TECHNIQUES.find((technique) => technique.id === id);
+  if (found) return found;
+  return {
+    id: "naked-single",
+    name: "Naked Single",
+    level: "Foundation",
+    summary: "A tile has only one candidate left.",
+    detail: "Place the remaining candidate.",
+  };
 }
