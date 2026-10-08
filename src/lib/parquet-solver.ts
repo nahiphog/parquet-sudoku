@@ -66,7 +66,7 @@ function bitCount(value: number): number {
   return count;
 }
 
-function countSolutions(values: number[], model: PuzzleModel, limit = 2): number {
+export function countSolutions(values: number[], model: PuzzleModel, limit = 2): number {
   const working = [...values];
   let solutions = 0;
 
