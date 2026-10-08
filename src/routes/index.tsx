@@ -185,10 +185,10 @@ function Index() {
   const [generating, setGenerating] = useState(false);
   const [hunting, setHunting] = useState(false);
   const [attempts, setAttempts] = useState<number | null>(null);
-  const [target, setTarget] = useState(12);
+  const [target, setTarget] = useState(21);
   const [dark, setDark] = useState(false);
-  const [showSnyder, setShowSnyder] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [walkStep, setWalkStep] = useState(0);
   const generationRef = useRef(0);
 
   useEffect(() => {
@@ -210,6 +210,7 @@ function Index() {
     setGenerating(true);
     setElapsed(null);
     setAttempts(null);
+    setWalkStep(0);
     const started = performance.now();
     const next = await buildPuzzle(nextVersion, () => generationRef.current === generation);
     if (generationRef.current !== generation) return;
@@ -245,12 +246,13 @@ function Index() {
 
     while (generationRef.current === generation) {
       tries += 1;
-      const next = await buildPuzzle(version, () => generationRef.current === generation);
+      const next = await buildExactPuzzle(version, target, () => generationRef.current === generation);
       if (generationRef.current !== generation) return;
       setAttempts(tries);
-      if (next && next.clues.filter((value) => value > 0).length <= target) {
+      if (next && next.clues.filter((value) => value > 0).length === target) {
         setPuzzle(next);
-      setSelected(null);
+        setSelected(null);
+        setWalkStep(0);
         setSpin((value) => value + 1);
         setElapsed(performance.now() - started);
         break;
@@ -281,15 +283,27 @@ function Index() {
     return `Selected: ${tile.cells.map(([r, c]) => `R${r + 1}C${c + 1}`).join(", ")} · rows ${rows.join(", ")} · columns ${cols.join(", ")} · region ${tile.boardIndex + 1}`;
   })();
   const marks = useMemo(
-    () => (puzzle && showSnyder ? snyderMarks(puzzle.clues, buildModelFromPlaced(puzzle.tiles), puzzle.tiles) : undefined),
-    [puzzle, showSnyder],
+    () => (puzzle ? snyderMarks(puzzle.clues, buildModelFromPlaced(puzzle.tiles), puzzle.tiles) : undefined),
+    [puzzle],
   );
+  const walkthrough = useMemo(
+    () => puzzle ? buildWalkthrough(puzzle.clues, puzzle.solution, buildModelFromPlaced(puzzle.tiles)) : null,
+    [puzzle],
+  );
+  const currentWalk = walkthrough && walkStep > 0 ? walkthrough.steps[walkStep - 1] : undefined;
+  const walkState = currentWalk ?? walkthrough?.initial;
+  const currentTechnique = currentWalk ? techniqueById(currentWalk.technique) : undefined;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/95 px-4 py-3 sm:px-6">
-        <div className="mx-auto grid max-w-7xl grid-cols-[2.5rem_1fr_4.75rem] items-center gap-3">
-          <Guide />
+        <div className="mx-auto grid max-w-7xl grid-cols-[5.5rem_1fr_4.75rem] items-center gap-3">
+          <div className="flex gap-2">
+            <Guide />
+            <Button asChild variant="outline" size="icon" className="rounded-full">
+              <Link to="/techniques" aria-label="Solving techniques"><BookOpen aria-hidden="true" /></Link>
+            </Button>
+          </div>
           <h1 className="text-center text-xl font-semibold sm:text-2xl">Parquet Sudoku</h1>
           <div className="flex items-center justify-end gap-2">
             <Sun className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -308,10 +322,7 @@ function Index() {
 
         <div className="flex items-center gap-6">
           <p className="text-sm font-semibold" aria-live="polite">Given cells: {clueCount}</p>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={showSnyder} onCheckedChange={setShowSnyder} disabled={!puzzle} aria-label="Show Snyder notation" />
-            Snyder notation
-          </label>
+          <p className="text-sm text-muted-foreground">Candidates always shown</p>
         </div>
 
         <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -329,7 +340,7 @@ function Index() {
             <Select value={String(target)} onValueChange={(value) => setTarget(Number(value))} disabled={generating}>
               <SelectTrigger className="h-12 w-28 rounded-full" aria-label="Target number of given cells"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {TARGETS.map((value) => <SelectItem key={value} value={String(value)}>{value} cells</SelectItem>)}
+                {TARGETS.map((value) => <SelectItem key={value} value={String(value)}>{value} givens</SelectItem>)}
               </SelectContent>
             </Select>
             {hunting ? (
@@ -338,7 +349,7 @@ function Index() {
               </Button>
             ) : (
               <Button type="button" onClick={hunt} disabled={generating} variant="secondary" size="lg" className="h-12 rounded-full px-6 font-semibold">
-                <Target aria-hidden="true" />Hunt for target
+                <Target aria-hidden="true" />Generate exact puzzle
               </Button>
             )}
           </div>
@@ -346,13 +357,53 @@ function Index() {
 
         <p className="min-h-5 text-center text-sm text-muted-foreground" aria-live="polite">
           {hunting
-            ? `Searching for ${target} given cells or fewer — ${attempts ?? 0} puzzles generated…`
+            ? `Searching for exactly ${target} given cells — ${attempts ?? 0} puzzles generated…`
             : generating
               ? "Checking for a unique solution…"
               : elapsed === null
                 ? ""
                 : `${attempts === null ? "" : `${attempts} puzzles generated · `}Generated in ${(elapsed / 1000).toFixed(2)} seconds`}
         </p>
+
+        {puzzle && walkthrough && walkState ? (
+          <section className="w-full border-t border-border pt-8" aria-labelledby="walkthrough-heading">
+            <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+              <div className="space-y-3">
+                <h2 id="walkthrough-heading" className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Solution walkthrough</h2>
+                <CellBoard
+                  tiles={puzzle.tiles}
+                  values={walkState.values}
+                  marks={walkState.candidates}
+                  spin={spin + walkStep}
+                  label={`Solution walkthrough step ${walkStep}`}
+                />
+              </div>
+              <div className="space-y-5 border-t border-border pt-5 lg:mt-8 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Step {walkStep} of {walkthrough.steps.length}</p>
+                  <h3 className="mt-2 text-2xl font-semibold">{currentWalk?.title ?? "Starting candidates"}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {currentWalk?.explanation ?? "Every possible digit is centered in its tile. Move forward to see placements and eliminations."}
+                  </p>
+                  {currentTechnique ? (
+                    <Button asChild variant="link" className="mt-2 h-auto p-0">
+                      <Link to="/techniques" hash={currentTechnique.id}>Learn {currentTechnique.name}</Link>
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="icon" onClick={() => setWalkStep((value) => Math.max(0, value - 1))} disabled={walkStep === 0} aria-label="Previous walkthrough step"><ChevronLeft aria-hidden="true" /></Button>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true"><div className="h-full bg-primary transition-all" style={{ width: `${walkthrough.steps.length ? (walkStep / walkthrough.steps.length) * 100 : 0}%` }} /></div>
+                  <Button type="button" variant="outline" size="icon" onClick={() => setWalkStep((value) => Math.min(walkthrough.steps.length, value + 1))} disabled={walkStep === walkthrough.steps.length} aria-label="Next walkthrough step"><ChevronRight aria-hidden="true" /></Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" className="flex-1" onClick={() => setWalkStep(0)}>Restart</Button>
+                  <Button type="button" className="flex-1" onClick={() => setWalkStep(walkthrough.steps.length)}>Show solved</Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
       </div>
     </main>
   );
