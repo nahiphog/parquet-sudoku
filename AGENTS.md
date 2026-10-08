@@ -8,3 +8,6 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep Parquet Sudoku constraint logic in pure `src/lib` modules so generation, uniqueness, and walkthrough rules share one tested model.
+- Define the walkthrough repertoire in one catalog module so every displayed technique corresponds to an implemented solver step.

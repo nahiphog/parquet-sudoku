@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import {
   type PlacedTile,
   type PuzzleVersion,
 } from "@/lib/parquet-layouts";
-import { buildModelFromPlaced, digPuzzle, randomSolution, snyderMarks } from "@/lib/parquet-solver";
+import { buildModelFromPlaced, digPuzzle, digPuzzleToTarget, randomSolution, snyderMarks } from "@/lib/parquet-solver";
+import { buildWalkthrough } from "@/lib/parquet-walkthrough";
+import { techniqueById } from "@/lib/techniques";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,7 +39,7 @@ export const Route = createFileRoute("/")({
 });
 
 const BOARD_COUNT = 9;
-const TARGETS = [8, 9, 10, 11, 12, 13, 14];
+const TARGETS = Array.from({ length: 12 }, (_, index) => index + 16);
 const PENPA_URL =
   "https://swaroopg92.github.io/penpa-edit/?m=solve&p=7Vdbb9tGE33Xr1gQ6Ns24F5490uRuklfEjf9nA9BIBgBLdOxEEp0SCqOZSS/PWdmhxEpKUDRom+FJPLwaGfm7OzuaNR93JZtpY2ldxLrWBu8UiD6uCzhD/H0er3q62quXpXtx23Vq4vtdfNhq59u+9umnauLcq3Oyru7ulqXm59fPGyqTmn9fFXXqiqXt6pa3/UPalnh+X7V36pSbbbrq6pVN22zVkb1jSpU16j+tuyDRXODh0oZq9rmvvvJnhFcNvV2velUubnG+LZ6v2rwtGw2fbkCqD5V7cPgufpcLvv6QTWbZfVEXTTriuN3qrsrN6pctk3Xqf6+Yf+qaRlLgCf6j3N9U9ZdNVtIAi5ni8hEOrL4mOjy6+78KxPF5exx97/54+7dfHH5Re/+v4f5Hl7MH3E9nzGLo3mi8hFSDX50ZEriPB7wnsi4HogkpiIYk8Ykx04MSY/8GJscmjl2M/IsXHsJx0z7CfbMzZmPyMrawwx+ZjhSY1iWcOzGnl2GVshfXuGPSdjhq1GnhPPzMgqCdkYWSUJz2KkOYtZzygbmXEHfjLDaf7uB8tjeJHe8vU5Xy1fX2MN9c7x9Te+xnxN+PqCxzzD0tos07ZAIIsEFE67GOKBcdeOloOwxbHySAVhb7Qj8YSTDMct2OKuXS62eaE9LQEw7trbYIu79rR8hF2mfRJscdc+DbYePr349IiFZ7GFH9HgoQ3PIRY041k0QI/MxaXQmYlOD/2p6LeYlxdbA8022NoCtpRwwrlBTsQWOh1tMMY5sMRy5AfLyv5Resb58VawBRY9HrHolDD2ew2kzWPpGafAg2bE9RLXIy5tKpo76p4Xnd4gPybE8iYGHuXHBG0+zr/nx8fIbRx8+jgFltzSGtH2Y+xHa0e5DZp9jLixxI0RN6a42ERveCud8dXThiqQAHKMLYo7EgwjxpjcmCchwLZAAkg48ZiQszIGE5rwNFEej8QbCGQetm4Yg6SOeTrfhFMkns4o4Qy2hYwhnCNJjJHgYUwCnk458/BTiH/+bRGfGWINYxLihzHQmYt+wlnQ7DL6bQpjvMHiuGCLOza48A6JH/NUdAlbLAJtOuZhmwxjgGkDMsYiD2MsFpk2HWFsOp8Ij8044WkzUj4xF1sEP7awoRiQZkubVPKDg+vskH+HMcHWWdqwMkeLHNJhojF5jDFBv83JZ1hrFyMPseTK0eEQng4lVXpeL8RKxWeBnNBGZoxYdCgJ04FIRUMKn3S4eQxtUvGJIuRkXnwQE+FRbFwitjkdAomVwycVMB4Pn4nknzY+/VJxbnHIqJgRTsCnwntaF1kLKnKSK59AfyZ8glhUzNgn1ssGDXxw7bDWxMt6YV5e9hsXRdaPQ5ZyBc/oN3o2W2DXUAd0/Er+4+lFLdB5aK7Om3Zd1miF5PllhDYo6pr6Xbdtb8plFc25fdLMhY4smvftVpi6ae7q1WY6bPV+07TVya+IrK7fnxp/1bTX5Hz0xX1Z1xMitLoTarlql/WU6tvV5Lls0RpOmHXZ306Iq7JHW9zdru6mnqpNPxXQl1OJ5YfyINp6P+cvs+hzxJ8FDnyqDTeZxXz3VO9+D83Y0Ifq3Z/oMl/Od+fUZC4itDPck/AgC/gsNDkE3/D3hM6ko4uBzwUDvgUMeXn3IjCv5ovdax1RnF/ZmmC0bj5BatBBz8tmfYXJLKJROsI3Hf9NGBpIarKe/liuE7kCg1xCJ+QW/77c4vJLWIj473T4vxx2+CMidPgj4kRD/5fa98Nm3dCPwMSPNOujWNKsT5ipwH/eCh/3MgfF9rNUi6Y9WTBADzVjyp4sDsIf1QfwR5WAAh4XA7An6gHYw5IA6rgqgDwqDOB+UBvI62F5IFWHFYJCHRUJCjWuE4vL2Tc=&a=RZHRrQNBCAN7uW8+lmVhoZYo/bcRsO/pSZGsC3NjQj6fr/x/Hl1H9iOdV2zypMSkqyQyOI8jjrxyJ++WQibn6ZxnyJmsS08lPNZ+nVTF96YO7pjDc6zQf47B71zHWz+v+1+Q9m6ZcegCHUp7KLePQy7Oy7mhLe7LtRZc+8YbheUvbQ3NT8q1AeVieXbZSJMbpm8403nBjEU8XrxtwG9AnonqUjyV8p612Vl7c2wLG5fxjmW8b+XL5cu1Dlw1Nv/l9wc=";
 
@@ -112,15 +114,15 @@ function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { 
             );
           })}
           {marks?.map((digitsHere, index) => {
-            const first = tiles[index]?.cells.reduce((a, b) => (b[0] < a[0] || (b[0] === a[0] && b[1] < a[1]) ? b : a));
-            if (!first || !digitsHere.length || values[index]) return null;
+            const position = digits[index];
+            if (!position || !digitsHere.length || values[index]) return null;
             return (
               <span
                 key={`m-${index}`}
-                className="absolute max-w-[calc(100%/12-4px)] break-all text-[0.45rem] leading-none text-primary sm:text-[0.55rem]"
-                style={{ top: `calc(${(first[0] / COMBINED_SIZE) * 100}% + 2px)`, left: `calc(${(first[1] / COMBINED_SIZE) * 100}% + 2px)` }}
+                className="absolute grid h-[min(7%,1.7rem)] w-[min(7%,1.7rem)] -translate-x-1/2 -translate-y-1/2 grid-cols-3 place-items-center text-[0.34rem] font-semibold leading-none text-primary sm:text-[0.46rem]"
+                style={{ top: `${position.top}%`, left: `${position.left}%` }}
               >
-                {digitsHere.join("")}
+                {Array.from({ length: 9 }, (_, digit) => <span key={digit}>{digitsHere.includes(digit + 1) ? digit + 1 : ""}</span>)}
               </span>
             );
           })}
@@ -166,6 +168,15 @@ function buildPuzzle(version: PuzzleVersion, isCurrent: () => boolean) {
   return digPuzzle(solution, model, isCurrent).then((clues) => ({ tiles, solution, clues }) as Puzzle);
 }
 
+async function buildExactPuzzle(version: PuzzleVersion, target: number, isCurrent: () => boolean) {
+  const tiles = placeBoards(boardsFor(version));
+  const model = buildModelFromPlaced(tiles);
+  const solution = randomSolution(model);
+  if (!solution) return null;
+  const clues = await digPuzzleToTarget(solution, model, target, isCurrent);
+  return clues ? ({ tiles, solution, clues } as Puzzle) : null;
+}
+
 function Index() {
   const [version, setVersion] = useState<PuzzleVersion>("v1");
   const [puzzle, setPuzzle] = useState<Puzzle | null>(null);
@@ -174,10 +185,10 @@ function Index() {
   const [generating, setGenerating] = useState(false);
   const [hunting, setHunting] = useState(false);
   const [attempts, setAttempts] = useState<number | null>(null);
-  const [target, setTarget] = useState(12);
+  const [target, setTarget] = useState(21);
   const [dark, setDark] = useState(false);
-  const [showSnyder, setShowSnyder] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const [walkStep, setWalkStep] = useState(0);
   const generationRef = useRef(0);
 
   useEffect(() => {
@@ -199,6 +210,7 @@ function Index() {
     setGenerating(true);
     setElapsed(null);
     setAttempts(null);
+    setWalkStep(0);
     const started = performance.now();
     const next = await buildPuzzle(nextVersion, () => generationRef.current === generation);
     if (generationRef.current !== generation) return;
@@ -234,12 +246,13 @@ function Index() {
 
     while (generationRef.current === generation) {
       tries += 1;
-      const next = await buildPuzzle(version, () => generationRef.current === generation);
+      const next = await buildExactPuzzle(version, target, () => generationRef.current === generation);
       if (generationRef.current !== generation) return;
       setAttempts(tries);
-      if (next && next.clues.filter((value) => value > 0).length <= target) {
+      if (next && next.clues.filter((value) => value > 0).length === target) {
         setPuzzle(next);
-      setSelected(null);
+        setSelected(null);
+        setWalkStep(0);
         setSpin((value) => value + 1);
         setElapsed(performance.now() - started);
         break;
@@ -270,15 +283,27 @@ function Index() {
     return `Selected: ${tile.cells.map(([r, c]) => `R${r + 1}C${c + 1}`).join(", ")} · rows ${rows.join(", ")} · columns ${cols.join(", ")} · region ${tile.boardIndex + 1}`;
   })();
   const marks = useMemo(
-    () => (puzzle && showSnyder ? snyderMarks(puzzle.clues, buildModelFromPlaced(puzzle.tiles), puzzle.tiles) : undefined),
-    [puzzle, showSnyder],
+    () => (puzzle ? snyderMarks(puzzle.clues, buildModelFromPlaced(puzzle.tiles), puzzle.tiles) : undefined),
+    [puzzle],
   );
+  const walkthrough = useMemo(
+    () => puzzle ? buildWalkthrough(puzzle.clues, puzzle.solution, buildModelFromPlaced(puzzle.tiles)) : null,
+    [puzzle],
+  );
+  const currentWalk = walkthrough && walkStep > 0 ? walkthrough.steps[walkStep - 1] : undefined;
+  const walkState = currentWalk ?? walkthrough?.initial;
+  const currentTechnique = currentWalk ? techniqueById(currentWalk.technique) : undefined;
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/95 px-4 py-3 sm:px-6">
-        <div className="mx-auto grid max-w-7xl grid-cols-[2.5rem_1fr_4.75rem] items-center gap-3">
-          <Guide />
+        <div className="mx-auto grid max-w-7xl grid-cols-[5.5rem_1fr_4.75rem] items-center gap-3">
+          <div className="flex gap-2">
+            <Guide />
+            <Button asChild variant="outline" size="icon" className="rounded-full">
+              <Link to="/techniques" aria-label="Solving techniques"><BookOpen aria-hidden="true" /></Link>
+            </Button>
+          </div>
           <h1 className="text-center text-xl font-semibold sm:text-2xl">Parquet Sudoku</h1>
           <div className="flex items-center justify-end gap-2">
             <Sun className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -297,10 +322,7 @@ function Index() {
 
         <div className="flex items-center gap-6">
           <p className="text-sm font-semibold" aria-live="polite">Given cells: {clueCount}</p>
-          <label className="flex items-center gap-2 text-sm">
-            <Switch checked={showSnyder} onCheckedChange={setShowSnyder} disabled={!puzzle} aria-label="Show Snyder notation" />
-            Snyder notation
-          </label>
+          <p className="text-sm text-muted-foreground">Candidates always shown</p>
         </div>
 
         <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -318,7 +340,7 @@ function Index() {
             <Select value={String(target)} onValueChange={(value) => setTarget(Number(value))} disabled={generating}>
               <SelectTrigger className="h-12 w-28 rounded-full" aria-label="Target number of given cells"><SelectValue /></SelectTrigger>
               <SelectContent>
-                {TARGETS.map((value) => <SelectItem key={value} value={String(value)}>{value} cells</SelectItem>)}
+                {TARGETS.map((value) => <SelectItem key={value} value={String(value)}>{value} givens</SelectItem>)}
               </SelectContent>
             </Select>
             {hunting ? (
@@ -327,7 +349,7 @@ function Index() {
               </Button>
             ) : (
               <Button type="button" onClick={hunt} disabled={generating} variant="secondary" size="lg" className="h-12 rounded-full px-6 font-semibold">
-                <Target aria-hidden="true" />Hunt for target
+                <Target aria-hidden="true" />Generate exact puzzle
               </Button>
             )}
           </div>
@@ -335,13 +357,53 @@ function Index() {
 
         <p className="min-h-5 text-center text-sm text-muted-foreground" aria-live="polite">
           {hunting
-            ? `Searching for ${target} given cells or fewer — ${attempts ?? 0} puzzles generated…`
+            ? `Searching for exactly ${target} given cells — ${attempts ?? 0} puzzles generated…`
             : generating
               ? "Checking for a unique solution…"
               : elapsed === null
                 ? ""
                 : `${attempts === null ? "" : `${attempts} puzzles generated · `}Generated in ${(elapsed / 1000).toFixed(2)} seconds`}
         </p>
+
+        {puzzle && walkthrough && walkState ? (
+          <section className="w-full border-t border-border pt-8" aria-labelledby="walkthrough-heading">
+            <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start">
+              <div className="space-y-3">
+                <h2 id="walkthrough-heading" className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Solution walkthrough</h2>
+                <CellBoard
+                  tiles={puzzle.tiles}
+                  values={walkState.values}
+                  marks={walkState.candidates}
+                  spin={spin + walkStep}
+                  label={`Solution walkthrough step ${walkStep}`}
+                />
+              </div>
+              <div className="space-y-5 border-t border-border pt-5 lg:mt-8 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-muted-foreground">Step {walkStep} of {walkthrough.steps.length}</p>
+                  <h3 className="mt-2 text-2xl font-semibold">{currentWalk?.title ?? "Starting candidates"}</h3>
+                  <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                    {currentWalk?.explanation ?? "Every possible digit is centered in its tile. Move forward to see placements and eliminations."}
+                  </p>
+                  {currentTechnique ? (
+                    <Button asChild variant="link" className="mt-2 h-auto p-0">
+                      <Link to="/techniques" hash={currentTechnique.id}>Learn {currentTechnique.name}</Link>
+                    </Button>
+                  ) : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button type="button" variant="outline" size="icon" onClick={() => setWalkStep((value) => Math.max(0, value - 1))} disabled={walkStep === 0} aria-label="Previous walkthrough step"><ChevronLeft aria-hidden="true" /></Button>
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden="true"><div className="h-full bg-primary transition-all" style={{ width: `${walkthrough.steps.length ? (walkStep / walkthrough.steps.length) * 100 : 0}%` }} /></div>
+                  <Button type="button" variant="outline" size="icon" onClick={() => setWalkStep((value) => Math.min(walkthrough.steps.length, value + 1))} disabled={walkStep === walkthrough.steps.length} aria-label="Next walkthrough step"><ChevronRight aria-hidden="true" /></Button>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="secondary" className="flex-1" onClick={() => setWalkStep(0)}>Restart</Button>
+                  <Button type="button" className="flex-1" onClick={() => setWalkStep(walkthrough.steps.length)}>Show solved</Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
       </div>
     </main>
   );

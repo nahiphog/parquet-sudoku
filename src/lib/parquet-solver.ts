@@ -5,6 +5,15 @@ const DIGIT_MASK = 0x1ff;
 
 export type PuzzleModel = {
   peers: number[][];
+  groups: PuzzleGroup[];
+  tileGroups: number[][];
+};
+
+export type PuzzleGroup = {
+  kind: "row" | "column" | "region";
+  index: number;
+  tiles: number[];
+  label: string;
 };
 
 export function buildPuzzleModel(boards: Tile[][]): PuzzleModel {
@@ -37,7 +46,14 @@ export function buildPuzzleModel(boards: Tile[][]): PuzzleModel {
     }
   }
 
-  return { peers: peerSets.map((peers) => [...peers]) };
+  const groups: PuzzleGroup[] = [
+    ...rowGroups.map((tiles, index) => ({ kind: "row" as const, index, tiles, label: `row ${index + 1}` })),
+    ...colGroups.map((tiles, index) => ({ kind: "column" as const, index, tiles, label: `column ${index + 1}` })),
+    ...regionGroups.map((tiles, index) => ({ kind: "region" as const, index, tiles, label: `region ${index + 1}` })),
+  ];
+  const tileGroups = Array.from({ length: tileIndex }, () => [] as number[]);
+  groups.forEach((group, groupIndex) => group.tiles.forEach((index) => tileGroups[index]?.push(groupIndex)));
+  return { peers: peerSets.map((peers) => [...peers]), groups, tileGroups };
 }
 
 function bitCount(value: number): number {
@@ -50,7 +66,7 @@ function bitCount(value: number): number {
   return count;
 }
 
-function countSolutions(values: number[], model: PuzzleModel, limit = 2): number {
+export function countSolutions(values: number[], model: PuzzleModel, limit = 2): number {
   const working = [...values];
   let solutions = 0;
 
@@ -134,6 +150,39 @@ export async function digPuzzle(
   return puzzle;
 }
 
+/** Dig only until an exact number of uniquely-solvable givens remains. */
+export async function digPuzzleToTarget(
+  solution: number[],
+  model: PuzzleModel,
+  target: number,
+  isCurrent: () => boolean,
+): Promise<number[] | null> {
+  if (target < 1 || target > solution.length) return null;
+  const puzzle = [...solution];
+  const order = Array.from({ length: puzzle.length }, (_, index) => index);
+  for (let index = order.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    const current = order[index];
+    const replacement = order[swapIndex];
+    if (current === undefined || replacement === undefined) continue;
+    order[index] = replacement;
+    order[swapIndex] = current;
+  }
+
+  let remaining = puzzle.length;
+  for (let attempt = 0; attempt < order.length && remaining > target; attempt += 1) {
+    if (!isCurrent()) return null;
+    const tileIndex = order[attempt];
+    if (tileIndex === undefined) continue;
+    const value = puzzle[tileIndex] ?? 0;
+    puzzle[tileIndex] = 0;
+    if (countSolutions(puzzle, model, 2) === 1) remaining -= 1;
+    else puzzle[tileIndex] = value;
+    if (attempt % 3 === 2) await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+  return remaining === target ? puzzle : null;
+}
+
 export function hasUniqueSolution(values: number[], model: PuzzleModel): boolean {
   return countSolutions(values, model, 2) === 1;
 }
@@ -167,7 +216,14 @@ export function buildModelFromPlaced(tiles: PlacedTile[]): PuzzleModel {
     }
   }
 
-  return { peers: peerSets.map((peers) => [...peers]) };
+  const groups: PuzzleGroup[] = [
+    ...[...rowGroups.entries()].sort((a, b) => a[0] - b[0]).map(([index, members]) => ({ kind: "row" as const, index, tiles: members, label: `row ${index + 1}` })),
+    ...[...colGroups.entries()].sort((a, b) => a[0] - b[0]).map(([index, members]) => ({ kind: "column" as const, index, tiles: members, label: `column ${index + 1}` })),
+    ...[...regionGroups.entries()].sort((a, b) => a[0] - b[0]).map(([index, members]) => ({ kind: "region" as const, index, tiles: members, label: `region ${index + 1}` })),
+  ];
+  const tileGroups = Array.from({ length: tiles.length }, () => [] as number[]);
+  groups.forEach((group, groupIndex) => group.tiles.forEach((index) => tileGroups[index]?.push(groupIndex)));
+  return { peers: peerSets.map((peers) => [...peers]), groups, tileGroups };
 }
 
 /** A random complete assignment of 1-9 respecting every peer group, or null. */
@@ -211,8 +267,10 @@ export function randomSolution(model: PuzzleModel): number[] | null {
     }
     for (let i = choices.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
-      const a = choices[i]!;
-      choices[i] = choices[j]!;
+      const a = choices[i];
+      const b = choices[j];
+      if (a === undefined || b === undefined) continue;
+      choices[i] = b;
       choices[j] = a;
     }
 
