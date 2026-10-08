@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,9 @@ import {
   type PlacedTile,
   type PuzzleVersion,
 } from "@/lib/parquet-layouts";
-import { buildModelFromPlaced, digPuzzle, randomSolution, snyderMarks } from "@/lib/parquet-solver";
+import { buildModelFromPlaced, digPuzzle, digPuzzleToTarget, randomSolution, snyderMarks } from "@/lib/parquet-solver";
+import { buildWalkthrough } from "@/lib/parquet-walkthrough";
+import { techniqueById } from "@/lib/techniques";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -37,7 +39,7 @@ export const Route = createFileRoute("/")({
 });
 
 const BOARD_COUNT = 9;
-const TARGETS = [8, 9, 10, 11, 12, 13, 14];
+const TARGETS = Array.from({ length: 12 }, (_, index) => index + 16);
 const PENPA_URL =
   "https://swaroopg92.github.io/penpa-edit/?m=solve&p=7Vdbb9tGE33Xr1gQ6Ns24F5490uRuklfEjf9nA9BIBgBLdOxEEp0SCqOZSS/PWdmhxEpKUDRom+FJPLwaGfm7OzuaNR93JZtpY2ldxLrWBu8UiD6uCzhD/H0er3q62quXpXtx23Vq4vtdfNhq59u+9umnauLcq3Oyru7ulqXm59fPGyqTmn9fFXXqiqXt6pa3/UPalnh+X7V36pSbbbrq6pVN22zVkb1jSpU16j+tuyDRXODh0oZq9rmvvvJnhFcNvV2velUubnG+LZ6v2rwtGw2fbkCqD5V7cPgufpcLvv6QTWbZfVEXTTriuN3qrsrN6pctk3Xqf6+Yf+qaRlLgCf6j3N9U9ZdNVtIAi5ni8hEOrL4mOjy6+78KxPF5exx97/54+7dfHH5Re/+v4f5Hl7MH3E9nzGLo3mi8hFSDX50ZEriPB7wnsi4HogkpiIYk8Ykx04MSY/8GJscmjl2M/IsXHsJx0z7CfbMzZmPyMrawwx+ZjhSY1iWcOzGnl2GVshfXuGPSdjhq1GnhPPzMgqCdkYWSUJz2KkOYtZzygbmXEHfjLDaf7uB8tjeJHe8vU5Xy1fX2MN9c7x9Te+xnxN+PqCxzzD0tos07ZAIIsEFE67GOKBcdeOloOwxbHySAVhb7Qj8YSTDMct2OKuXS62eaE9LQEw7trbYIu79rR8hF2mfRJscdc+DbYePr349IiFZ7GFH9HgoQ3PIRY041k0QI/MxaXQmYlOD/2p6LeYlxdbA8022NoCtpRwwrlBTsQWOh1tMMY5sMRy5AfLyv5Resb58VawBRY9HrHolDD2ew2kzWPpGafAg2bE9RLXIy5tKpo76p4Xnd4gPybE8iYGHuXHBG0+zr/nx8fIbRx8+jgFltzSGtH2Y+xHa0e5DZp9jLixxI0RN6a42ERveCud8dXThiqQAHKMLYo7EgwjxpjcmCchwLZAAkg48ZiQszIGE5rwNFEej8QbCGQetm4Yg6SOeTrfhFMkns4o4Qy2hYwhnCNJjJHgYUwCnk458/BTiH/+bRGfGWINYxLihzHQmYt+wlnQ7DL6bQpjvMHiuGCLOza48A6JH/NUdAlbLAJtOuZhmwxjgGkDMsYiD2MsFpk2HWFsOp8Ij8044WkzUj4xF1sEP7awoRiQZkubVPKDg+vskH+HMcHWWdqwMkeLHNJhojF5jDFBv83JZ1hrFyMPseTK0eEQng4lVXpeL8RKxWeBnNBGZoxYdCgJ04FIRUMKn3S4eQxtUvGJIuRkXnwQE+FRbFwitjkdAomVwycVMB4Pn4nknzY+/VJxbnHIqJgRTsCnwntaF1kLKnKSK59AfyZ8glhUzNgn1ssGDXxw7bDWxMt6YV5e9hsXRdaPQ5ZyBc/oN3o2W2DXUAd0/Er+4+lFLdB5aK7Om3Zd1miF5PllhDYo6pr6Xbdtb8plFc25fdLMhY4smvftVpi6ae7q1WY6bPV+07TVya+IrK7fnxp/1bTX5Hz0xX1Z1xMitLoTarlql/WU6tvV5Lls0RpOmHXZ306Iq7JHW9zdru6mnqpNPxXQl1OJ5YfyINp6P+cvs+hzxJ8FDnyqDTeZxXz3VO9+D83Y0Ifq3Z/oMl/Od+fUZC4itDPck/AgC/gsNDkE3/D3hM6ko4uBzwUDvgUMeXn3IjCv5ovdax1RnF/ZmmC0bj5BatBBz8tmfYXJLKJROsI3Hf9NGBpIarKe/liuE7kCg1xCJ+QW/77c4vJLWIj473T4vxx2+CMidPgj4kRD/5fa98Nm3dCPwMSPNOujWNKsT5ipwH/eCh/3MgfF9rNUi6Y9WTBADzVjyp4sDsIf1QfwR5WAAh4XA7An6gHYw5IA6rgqgDwqDOB+UBvI62F5IFWHFYJCHRUJCjWuE4vL2Tc=&a=RZHRrQNBCAN7uW8+lmVhoZYo/bcRsO/pSZGsC3NjQj6fr/x/Hl1H9iOdV2zypMSkqyQyOI8jjrxyJ++WQibn6ZxnyJmsS08lPNZ+nVTF96YO7pjDc6zQf47B71zHWz+v+1+Q9m6ZcegCHUp7KLePQy7Oy7mhLe7LtRZc+8YbheUvbQ3NT8q1AeVieXbZSJMbpm8403nBjEU8XrxtwG9AnonqUjyV8p612Vl7c2wLG5fxjmW8b+XL5cu1Dlw1Nv/l9wc=";
 
@@ -112,15 +114,15 @@ function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { 
             );
           })}
           {marks?.map((digitsHere, index) => {
-            const first = tiles[index]?.cells.reduce((a, b) => (b[0] < a[0] || (b[0] === a[0] && b[1] < a[1]) ? b : a));
-            if (!first || !digitsHere.length || values[index]) return null;
+            const position = digits[index];
+            if (!position || !digitsHere.length || values[index]) return null;
             return (
               <span
                 key={`m-${index}`}
-                className="absolute max-w-[calc(100%/12-4px)] break-all text-[0.45rem] leading-none text-primary sm:text-[0.55rem]"
-                style={{ top: `calc(${(first[0] / COMBINED_SIZE) * 100}% + 2px)`, left: `calc(${(first[1] / COMBINED_SIZE) * 100}% + 2px)` }}
+                className="absolute grid h-[min(7%,1.7rem)] w-[min(7%,1.7rem)] -translate-x-1/2 -translate-y-1/2 grid-cols-3 place-items-center text-[0.34rem] font-semibold leading-none text-primary sm:text-[0.46rem]"
+                style={{ top: `${position.top}%`, left: `${position.left}%` }}
               >
-                {digitsHere.join("")}
+                {Array.from({ length: 9 }, (_, digit) => <span key={digit}>{digitsHere.includes(digit + 1) ? digit + 1 : ""}</span>)}
               </span>
             );
           })}
@@ -164,6 +166,15 @@ function buildPuzzle(version: PuzzleVersion, isCurrent: () => boolean) {
   const solution = randomSolution(model);
   if (!solution) return null;
   return digPuzzle(solution, model, isCurrent).then((clues) => ({ tiles, solution, clues }) as Puzzle);
+}
+
+async function buildExactPuzzle(version: PuzzleVersion, target: number, isCurrent: () => boolean) {
+  const tiles = placeBoards(boardsFor(version));
+  const model = buildModelFromPlaced(tiles);
+  const solution = randomSolution(model);
+  if (!solution) return null;
+  const clues = await digPuzzleToTarget(solution, model, target, isCurrent);
+  return clues ? ({ tiles, solution, clues } as Puzzle) : null;
 }
 
 function Index() {
