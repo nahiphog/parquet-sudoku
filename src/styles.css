@@ -67,6 +67,12 @@
   --color-tile-foreground: var(--tile-foreground);
   --color-board: var(--board);
   --color-board-line: var(--board-line);
+  --color-given-ink: var(--given-ink);
+  --color-solved-ink: var(--solved-ink);
+  --color-given-surface: var(--given-surface);
+  --color-step-highlight: var(--step-highlight);
+  --color-step-axis: var(--step-axis);
+  --color-elimination-ink: var(--elimination-ink);
   --font-display: "Fraunces", Georgia, serif;
   --font-sans: "Karla", system-ui, sans-serif;
   --shadow-tile: 0 1px 0 0 oklch(1 0 0 / 45%) inset, 0 6px 14px -6px oklch(0.28 0.06 55 / 45%);
@@ -116,6 +122,12 @@
   --tile-foreground: oklch(0.28 0.06 55);
   --board: oklch(0.96 0.02 85);
   --board-line: oklch(0.86 0.03 80);
+  --given-ink: oklch(0 0 0);
+  --solved-ink: oklch(0.48 0.22 260);
+  --given-surface: oklch(0.99 0.01 88);
+  --step-highlight: oklch(0.88 0.14 95);
+  --step-axis: oklch(0.92 0.04 250);
+  --elimination-ink: oklch(0.53 0.23 27);
 }
 
 .dark {
@@ -153,6 +165,10 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
   --board: oklch(0.18 0.025 55);
   --board-line: oklch(0.34 0.035 60);
+  --solved-ink: oklch(0.76 0.14 250);
+  --step-highlight: oklch(0.43 0.1 95);
+  --step-axis: oklch(0.29 0.055 250);
+  --elimination-ink: oklch(0.74 0.18 27);
 }
 
 @layer base {
