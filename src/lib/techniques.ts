@@ -78,3 +78,23 @@ export function techniqueById(id: TechniqueId): Technique {
     detail: "Place the remaining candidate.",
   };
 }
+
+/** Ordered by the same increasing pattern complexity used by the solver. */
+export function techniqueRank(id: TechniqueId, title: string): number {
+  const base = TECHNIQUES.findIndex((technique) => technique.id === id) * 10;
+  if (title.includes("Triple") || title === "Swordfish") return base + 1;
+  if (title.includes("Quad") || title === "Jellyfish") return base + 2;
+  return base;
+}
+
+export function summarizeTechniques(steps: Array<{ technique: TechniqueId; title: string }>) {
+  const tally = new Map<string, { technique: TechniqueId; title: string; steps: number[] }>();
+  steps.forEach((step, index) => {
+    const row = tally.get(step.title) ?? { technique: step.technique, title: step.title, steps: [] };
+    row.steps.push(index + 1);
+    tally.set(step.title, row);
+  });
+  const rows = [...tally.values()].sort((a, b) => techniqueRank(a.technique, a.title) - techniqueRank(b.technique, b.title));
+  const hardest = rows.at(-1);
+  return { rows, difficulty: hardest ? techniqueById(hardest.technique).level : "Foundation" };
+}
