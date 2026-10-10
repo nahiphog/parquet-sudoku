@@ -15,8 +15,8 @@ import {
   type PuzzleVersion,
 } from "@/lib/parquet-layouts";
 import { buildModelFromPlaced, digPuzzle, digPuzzleToTarget, randomSolution, snyderMarks } from "@/lib/parquet-solver";
-import { buildWalkthrough } from "@/lib/parquet-walkthrough";
-import { techniqueById } from "@/lib/techniques";
+import { buildWalkthrough, type WalkthroughStep } from "@/lib/parquet-walkthrough";
+import { summarizeTechniques, techniqueById } from "@/lib/techniques";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -39,13 +39,18 @@ export const Route = createFileRoute("/")({
 });
 
 const BOARD_COUNT = 9;
-const TARGETS = Array.from({ length: 12 }, (_, index) => index + 16);
+const TARGETS = Array.from({ length: 17 }, (_, index) => index + 11);
 const PENPA_URL =
   "https://swaroopg92.github.io/penpa-edit/?m=solve&p=7Vdbb9tGE33Xr1gQ6Ns24F5490uRuklfEjf9nA9BIBgBLdOxEEp0SCqOZSS/PWdmhxEpKUDRom+FJPLwaGfm7OzuaNR93JZtpY2ldxLrWBu8UiD6uCzhD/H0er3q62quXpXtx23Vq4vtdfNhq59u+9umnauLcq3Oyru7ulqXm59fPGyqTmn9fFXXqiqXt6pa3/UPalnh+X7V36pSbbbrq6pVN22zVkb1jSpU16j+tuyDRXODh0oZq9rmvvvJnhFcNvV2velUubnG+LZ6v2rwtGw2fbkCqD5V7cPgufpcLvv6QTWbZfVEXTTriuN3qrsrN6pctk3Xqf6+Yf+qaRlLgCf6j3N9U9ZdNVtIAi5ni8hEOrL4mOjy6+78KxPF5exx97/54+7dfHH5Re/+v4f5Hl7MH3E9nzGLo3mi8hFSDX50ZEriPB7wnsi4HogkpiIYk8Ykx04MSY/8GJscmjl2M/IsXHsJx0z7CfbMzZmPyMrawwx+ZjhSY1iWcOzGnl2GVshfXuGPSdjhq1GnhPPzMgqCdkYWSUJz2KkOYtZzygbmXEHfjLDaf7uB8tjeJHe8vU5Xy1fX2MN9c7x9Te+xnxN+PqCxzzD0tos07ZAIIsEFE67GOKBcdeOloOwxbHySAVhb7Qj8YSTDMct2OKuXS62eaE9LQEw7trbYIu79rR8hF2mfRJscdc+DbYePr349IiFZ7GFH9HgoQ3PIRY041k0QI/MxaXQmYlOD/2p6LeYlxdbA8022NoCtpRwwrlBTsQWOh1tMMY5sMRy5AfLyv5Resb58VawBRY9HrHolDD2ew2kzWPpGafAg2bE9RLXIy5tKpo76p4Xnd4gPybE8iYGHuXHBG0+zr/nx8fIbRx8+jgFltzSGtH2Y+xHa0e5DZp9jLixxI0RN6a42ERveCud8dXThiqQAHKMLYo7EgwjxpjcmCchwLZAAkg48ZiQszIGE5rwNFEej8QbCGQetm4Yg6SOeTrfhFMkns4o4Qy2hYwhnCNJjJHgYUwCnk458/BTiH/+bRGfGWINYxLihzHQmYt+wlnQ7DL6bQpjvMHiuGCLOza48A6JH/NUdAlbLAJtOuZhmwxjgGkDMsYiD2MsFpk2HWFsOp8Ij8044WkzUj4xF1sEP7awoRiQZkubVPKDg+vskH+HMcHWWdqwMkeLHNJhojF5jDFBv83JZ1hrFyMPseTK0eEQng4lVXpeL8RKxWeBnNBGZoxYdCgJ04FIRUMKn3S4eQxtUvGJIuRkXnwQE+FRbFwitjkdAomVwycVMB4Pn4nknzY+/VJxbnHIqJgRTsCnwntaF1kLKnKSK59AfyZ8glhUzNgn1ssGDXxw7bDWxMt6YV5e9hsXRdaPQ5ZyBc/oN3o2W2DXUAd0/Er+4+lFLdB5aK7Om3Zd1miF5PllhDYo6pr6Xbdtb8plFc25fdLMhY4smvftVpi6ae7q1WY6bPV+07TVya+IrK7fnxp/1bTX5Hz0xX1Z1xMitLoTarlql/WU6tvV5Lls0RpOmHXZ306Iq7JHW9zdru6mnqpNPxXQl1OJ5YfyINp6P+cvs+hzxJ8FDnyqDTeZxXz3VO9+D83Y0Ifq3Z/oMl/Od+fUZC4itDPck/AgC/gsNDkE3/D3hM6ko4uBzwUDvgUMeXn3IjCv5ovdax1RnF/ZmmC0bj5BatBBz8tmfYXJLKJROsI3Hf9NGBpIarKe/liuE7kCg1xCJ+QW/77c4vJLWIj473T4vxx2+CMidPgj4kRD/5fa98Nm3dCPwMSPNOujWNKsT5ipwH/eCh/3MgfF9rNUi6Y9WTBADzVjyp4sDsIf1QfwR5WAAh4XA7An6gHYw5IA6rgqgDwqDOB+UBvI62F5IFWHFYJCHRUJCjWuE4vL2Tc=&a=RZHRrQNBCAN7uW8+lmVhoZYo/bcRsO/pSZGsC3NjQj6fr/x/Hl1H9iOdV2zypMSkqyQyOI8jjrxyJ++WQibn6ZxnyJmsS08lPNZ+nVTF96YO7pjDc6zQf47B71zHWz+v+1+Q9m6ZcegCHUp7KLePQy7Oy7mhLe7LtRZc+8YbheUvbQ3NT8q1AeVieXbZSJMbpm8403nBjEU8XrxtwG9AnonqUjyV8p612Vl7c2wLG5fxjmW8b+XL5cu1Dlw1Nv/l9wc=";
 
-function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { tiles: PlacedTile[]; values: number[]; spin: number; label: string; marks?: number[][] | undefined; selected?: number | null; onSelect?: (index: number) => void }) {
-  const peers = useMemo(() => buildModelFromPlaced(tiles).peers, [tiles]);
+function CellBoard({ tiles, values, givens, spin, label, marks, selected, onSelect, evidence }: { tiles: PlacedTile[]; values: number[]; givens: number[]; spin: number; label: string; marks?: number[][] | undefined; selected?: number | null; onSelect?: (index: number) => void; evidence?: WalkthroughStep | undefined }) {
+  const model = useMemo(() => buildModelFromPlaced(tiles), [tiles]);
+  const peers = model.peers;
   const seen = useMemo(() => new Set(selected == null ? [] : peers[selected] ?? []), [peers, selected]);
+  const proofGroups = (evidence?.groups ?? []).flatMap((index) => model.groups[index] ? [model.groups[index]] : []);
+  const proofTiles = new Set(evidence?.source ?? []);
+  const highlightedMarks = new Set(evidence?.highlights.map(({ tile, digit }) => `${tile}-${digit}`) ?? []);
+  const removedMarks = new Set(evidence?.eliminations.map(({ tile, digit }) => `${tile}-${digit}`) ?? []);
   const owner = useMemo(() => {
     const map = new Map<number, number>();
     tiles.forEach((tile, index) => {
@@ -82,13 +87,16 @@ function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { 
             const row = Math.floor(cell / COMBINED_SIZE);
             const col = cell % COMBINED_SIZE;
             const self = owner.get(cell);
+            const inAxis = proofGroups.some((group) => group.kind === "row" ? group.index === row : group.kind === "column" ? group.index === col : group.index === tiles[self ?? -1]?.boardIndex);
             const sameAs = (r: number, c: number) =>
               r >= 0 && c >= 0 && r < COMBINED_SIZE && c < COMBINED_SIZE && owner.get(r * COMBINED_SIZE + c) === self;
             return (
               <div
                 key={cell}
                 onClick={onSelect && self !== undefined ? () => onSelect(self) : undefined}
-                className={`border-solid border-foreground/60 ${onSelect ? "cursor-pointer" : ""} ${self !== undefined && self === selected ? "bg-primary/35" : self !== undefined && seen.has(self) ? "bg-primary/15" : "bg-card"}`}
+                data-cell={cell}
+                data-axis={inAxis || undefined}
+                className={`border-solid border-foreground/60 ${onSelect ? "cursor-pointer" : ""} ${self !== undefined && proofTiles.has(self) ? "bg-step-highlight" : self !== undefined && self === selected ? "bg-step-highlight" : inAxis || (self !== undefined && seen.has(self)) ? "bg-step-axis" : givens[self ?? -1] ? "bg-given-surface" : "bg-card"}`}
                 style={{
                   borderTopWidth: sameAs(row - 1, col) ? 0 : 1,
                   borderBottomWidth: sameAs(row + 1, col) ? 0 : 1,
@@ -106,8 +114,9 @@ function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { 
             return (
               <span
                 key={`${spin}-${index}`}
-                className="animate-tile-settle absolute -translate-x-1/2 -translate-y-1/2 text-sm font-bold text-card-foreground sm:text-lg"
-                style={{ top: `${top}%`, left: `${left}%`, animationDelay: `${index * 4}ms` }}
+                data-value-tile={index}
+                className={`absolute -translate-x-1/2 -translate-y-1/2 text-sm font-bold sm:text-lg ${givens[index] ? "text-given-ink" : "text-solved-ink"}`}
+                style={{ top: `${top}%`, left: `${left}%` }}
               >
                 {value}
               </span>
@@ -115,14 +124,20 @@ function CellBoard({ tiles, values, spin, label, marks, selected, onSelect }: { 
           })}
           {marks?.map((digitsHere, index) => {
             const position = digits[index];
-            if (!position || !digitsHere.length || values[index]) return null;
+            const removed = evidence?.eliminations.filter((item) => item.tile === index).map((item) => item.digit) ?? [];
+            if (!position || (!digitsHere.length && !removed.length) || values[index]) return null;
             return (
               <span
                 key={`m-${index}`}
-                className="absolute grid h-[min(7%,1.7rem)] w-[min(7%,1.7rem)] -translate-x-1/2 -translate-y-1/2 grid-cols-3 place-items-center text-[0.34rem] font-semibold leading-none text-primary sm:text-[0.46rem]"
+                className="absolute grid h-[min(7%,1.7rem)] w-[min(7%,1.7rem)] -translate-x-1/2 -translate-y-1/2 grid-cols-3 place-items-center text-[0.51rem] font-semibold leading-none text-solved-ink sm:text-[0.69rem]"
                 style={{ top: `${position.top}%`, left: `${position.left}%` }}
               >
-                {Array.from({ length: 9 }, (_, digit) => <span key={digit}>{digitsHere.includes(digit + 1) ? digit + 1 : ""}</span>)}
+                {Array.from({ length: 9 }, (_, digit) => {
+                  const number = digit + 1;
+                  const crossed = removedMarks.has(`${index}-${number}`);
+                  const highlighted = highlightedMarks.has(`${index}-${number}`);
+                  return <span key={digit} data-candidate={digitsHere.includes(number) || crossed ? `${index}-${number}` : undefined} data-removed={crossed || undefined} className={crossed ? "text-elimination-ink line-through decoration-2" : highlighted ? "bg-step-highlight font-extrabold ring-1 ring-solved-ink" : ""}>{digitsHere.includes(number) || crossed ? number : ""}</span>;
+                })}
               </span>
             );
           })}
@@ -293,6 +308,15 @@ function Index() {
   const currentWalk = walkthrough && walkStep > 0 ? walkthrough.steps[walkStep - 1] : undefined;
   const walkState = currentWalk ?? walkthrough?.initial;
   const currentTechnique = currentWalk ? techniqueById(currentWalk.technique) : undefined;
+  const techniqueSummary = useMemo(() => summarizeTechniques(walkthrough?.steps ?? []), [walkthrough]);
+  const involvedGroups = currentWalk?.groups.flatMap((index) => {
+    const group = puzzle ? buildModelFromPlaced(puzzle.tiles).groups[index] : undefined;
+    return group ? [group.label] : [];
+  }) ?? [];
+  const involvedCells = currentWalk?.source.map((index) => {
+    const tile = tiles[index];
+    return tile?.cells.map(([row, col]) => `R${row + 1}C${col + 1}`).join("/") ?? "";
+  }) ?? [];
 
   return (
     <main className="min-h-screen bg-background text-foreground">
@@ -315,14 +339,14 @@ function Index() {
 
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-7 px-4 py-8 sm:px-6">
         <div className="grid w-full gap-8 lg:grid-cols-2">
-          <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Puzzle</h2><CellBoard tiles={tiles} values={clueValues} spin={spin} label="Parquet Sudoku puzzle" marks={marks} selected={selected} onSelect={(i) => setSelected((cur) => (cur === i ? null : i))} />
+          <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Puzzle</h2><CellBoard tiles={tiles} values={clueValues} givens={clueValues} spin={spin} label="Parquet Sudoku puzzle" marks={marks} selected={selected} onSelect={(i) => setSelected((cur) => (cur === i ? null : i))} />
             <p className="min-h-5 text-center text-sm font-semibold" aria-live="polite">{selectedLabel}</p></section>
-          <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Solution</h2><CellBoard tiles={tiles} values={solutionValues} spin={spin} label="Completed Parquet Sudoku solution" /></section>
+          <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Solution</h2><CellBoard tiles={tiles} values={solutionValues} givens={clueValues} spin={spin} label="Completed Parquet Sudoku solution" /></section>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <p className="text-sm font-semibold" aria-live="polite">Given cells: {clueCount}</p>
-          <p className="text-sm text-muted-foreground">Candidates always shown</p>
+          {puzzle ? <p className="text-sm font-semibold" title="Based on the hardest technique used in this walkthrough">Difficulty: {techniqueSummary.difficulty}</p> : null}
         </div>
 
         <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
@@ -373,8 +397,10 @@ function Index() {
                 <CellBoard
                   tiles={puzzle.tiles}
                   values={walkState.values}
+                  givens={puzzle.clues}
                   marks={walkState.candidates}
-                  spin={spin + walkStep}
+                  evidence={currentWalk}
+                  spin={spin}
                   label={`Solution walkthrough step ${walkStep}`}
                 />
               </div>
@@ -385,6 +411,7 @@ function Index() {
                   <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
                     {currentWalk?.explanation ?? "Every possible digit is centered in its tile. Move forward to see placements and eliminations."}
                   </p>
+                  {currentWalk ? <p className="mt-3 break-words text-xs leading-relaxed text-muted-foreground">{involvedCells.join(" · ")}{involvedGroups.length ? ` · ${involvedGroups.join(", ")}` : ""}</p> : null}
                   {currentTechnique ? (
                     <Button asChild variant="link" className="mt-2 h-auto p-0">
                       <Link to="/techniques" hash={currentTechnique.id}>Learn {currentTechnique.name}</Link>
@@ -401,6 +428,14 @@ function Index() {
                   <Button type="button" className="flex-1" onClick={() => setWalkStep(walkthrough.steps.length)}>Show solved</Button>
                 </div>
               </div>
+            </div>
+            <div className="mx-auto mt-8 max-w-5xl border-t border-border pt-6">
+              <h3 className="text-lg font-semibold">Technique tally</h3>
+              <p className="mt-1 text-sm text-muted-foreground">Difficulty: {techniqueSummary.difficulty} · hardest technique used in this walkthrough</p>
+              <table className="mt-4 w-full table-fixed text-left text-sm" aria-label="Technique tally">
+                <thead><tr className="border-b border-border"><th className="w-2/5 py-2 pr-4 font-semibold">Technique</th><th className="py-2 font-semibold">Steps</th></tr></thead>
+                <tbody>{techniqueSummary.rows.map((row) => <tr key={row.title} className="border-b border-border"><td className="py-3 pr-4 align-top font-semibold">{row.title}</td><td className="py-3 leading-relaxed break-words">{row.steps.join(", ")}</td></tr>)}</tbody>
+              </table>
             </div>
           </section>
         ) : null}

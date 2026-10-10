@@ -11,3 +11,5 @@
 
 - Keep Parquet Sudoku constraint logic in pure `src/lib` modules so generation, uniqueness, and walkthrough rules share one tested model.
 - Define the walkthrough repertoire in one catalog module so every displayed technique corresponds to an implemented solver step.
+- Record step evidence alongside post-step snapshots in the pure walkthrough model; render eliminated candidates as a temporary overlay so navigation never mutates solver state.
+- Derive technique tally ordering and difficulty from the shared catalog rather than clue count, so summaries reflect the implemented solving repertoire.
