@@ -1,7 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, BookOpen, ChevronLeft, ChevronRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, ClipboardCopy, ChevronLeft, Hammer, ChevronRight, Info, LoaderCircle, Moon, RefreshCw, Square, Target, Sun } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { CellBoard } from "@/components/CellBoard";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/parquet-layouts";
 import { buildModelFromPlaced, digPuzzle, digPuzzleToTarget, randomSolution, snyderMarks } from "@/lib/parquet-solver";
 import { buildWalkthrough, type WalkthroughStep } from "@/lib/parquet-walkthrough";
+import { toast } from "sonner";
 import { summarizeTechniques, techniqueById } from "@/lib/techniques";
 
 export const Route = createFileRoute("/")({
@@ -42,115 +44,6 @@ const BOARD_COUNT = 9;
 const TARGETS = Array.from({ length: 17 }, (_, index) => index + 11);
 const PENPA_URL =
   "https://swaroopg92.github.io/penpa-edit/?m=solve&p=7Vdbb9tGE33Xr1gQ6Ns24F5490uRuklfEjf9nA9BIBgBLdOxEEp0SCqOZSS/PWdmhxEpKUDRom+FJPLwaGfm7OzuaNR93JZtpY2ldxLrWBu8UiD6uCzhD/H0er3q62quXpXtx23Vq4vtdfNhq59u+9umnauLcq3Oyru7ulqXm59fPGyqTmn9fFXXqiqXt6pa3/UPalnh+X7V36pSbbbrq6pVN22zVkb1jSpU16j+tuyDRXODh0oZq9rmvvvJnhFcNvV2velUubnG+LZ6v2rwtGw2fbkCqD5V7cPgufpcLvv6QTWbZfVEXTTriuN3qrsrN6pctk3Xqf6+Yf+qaRlLgCf6j3N9U9ZdNVtIAi5ni8hEOrL4mOjy6+78KxPF5exx97/54+7dfHH5Re/+v4f5Hl7MH3E9nzGLo3mi8hFSDX50ZEriPB7wnsi4HogkpiIYk8Ykx04MSY/8GJscmjl2M/IsXHsJx0z7CfbMzZmPyMrawwx+ZjhSY1iWcOzGnl2GVshfXuGPSdjhq1GnhPPzMgqCdkYWSUJz2KkOYtZzygbmXEHfjLDaf7uB8tjeJHe8vU5Xy1fX2MN9c7x9Te+xnxN+PqCxzzD0tos07ZAIIsEFE67GOKBcdeOloOwxbHySAVhb7Qj8YSTDMct2OKuXS62eaE9LQEw7trbYIu79rR8hF2mfRJscdc+DbYePr349IiFZ7GFH9HgoQ3PIRY041k0QI/MxaXQmYlOD/2p6LeYlxdbA8022NoCtpRwwrlBTsQWOh1tMMY5sMRy5AfLyv5Resb58VawBRY9HrHolDD2ew2kzWPpGafAg2bE9RLXIy5tKpo76p4Xnd4gPybE8iYGHuXHBG0+zr/nx8fIbRx8+jgFltzSGtH2Y+xHa0e5DZp9jLixxI0RN6a42ERveCud8dXThiqQAHKMLYo7EgwjxpjcmCchwLZAAkg48ZiQszIGE5rwNFEej8QbCGQetm4Yg6SOeTrfhFMkns4o4Qy2hYwhnCNJjJHgYUwCnk458/BTiH/+bRGfGWINYxLihzHQmYt+wlnQ7DL6bQpjvMHiuGCLOza48A6JH/NUdAlbLAJtOuZhmwxjgGkDMsYiD2MsFpk2HWFsOp8Ij8044WkzUj4xF1sEP7awoRiQZkubVPKDg+vskH+HMcHWWdqwMkeLHNJhojF5jDFBv83JZ1hrFyMPseTK0eEQng4lVXpeL8RKxWeBnNBGZoxYdCgJ04FIRUMKn3S4eQxtUvGJIuRkXnwQE+FRbFwitjkdAomVwycVMB4Pn4nknzY+/VJxbnHIqJgRTsCnwntaF1kLKnKSK59AfyZ8glhUzNgn1ssGDXxw7bDWxMt6YV5e9hsXRdaPQ5ZyBc/oN3o2W2DXUAd0/Er+4+lFLdB5aK7Om3Zd1miF5PllhDYo6pr6Xbdtb8plFc25fdLMhY4smvftVpi6ae7q1WY6bPV+07TVya+IrK7fnxp/1bTX5Hz0xX1Z1xMitLoTarlql/WU6tvV5Lls0RpOmHXZ306Iq7JHW9zdru6mnqpNPxXQl1OJ5YfyINp6P+cvs+hzxJ8FDnyqDTeZxXz3VO9+D83Y0Ifq3Z/oMl/Od+fUZC4itDPck/AgC/gsNDkE3/D3hM6ko4uBzwUDvgUMeXn3IjCv5ovdax1RnF/ZmmC0bj5BatBBz8tmfYXJLKJROsI3Hf9NGBpIarKe/liuE7kCg1xCJ+QW/77c4vJLWIj473T4vxx2+CMidPgj4kRD/5fa98Nm3dCPwMSPNOujWNKsT5ipwH/eCh/3MgfF9rNUi6Y9WTBADzVjyp4sDsIf1QfwR5WAAh4XA7An6gHYw5IA6rgqgDwqDOB+UBvI62F5IFWHFYJCHRUJCjWuE4vL2Tc=&a=RZHRrQNBCAN7uW8+lmVhoZYo/bcRsO/pSZGsC3NjQj6fr/x/Hl1H9iOdV2zypMSkqyQyOI8jjrxyJ++WQibn6ZxnyJmsS08lPNZ+nVTF96YO7pjDc6zQf47B71zHWz+v+1+Q9m6ZcegCHUp7KLePQy7Oy7mhLe7LtRZc+8YbheUvbQ3NT8q1AeVieXbZSJMbpm8403nBjEU8XrxtwG9AnonqUjyV8p612Vl7c2wLG5fxjmW8b+XL5cu1Dlw1Nv/l9wc=";
-
-function CellBoard({ tiles, values, givens, spin, label, marks, selected, onSelect, evidence }: { tiles: PlacedTile[]; values: number[]; givens: number[]; spin: number; label: string; marks?: number[][] | undefined; selected?: number | null; onSelect?: (index: number) => void; evidence?: WalkthroughStep | undefined }) {
-  const model = useMemo(() => buildModelFromPlaced(tiles), [tiles]);
-  const peers = model.peers;
-  const seen = useMemo(() => new Set(selected == null ? [] : peers[selected] ?? []), [peers, selected]);
-  const proofGroups = (evidence?.groups ?? []).flatMap((index) => model.groups[index] ? [model.groups[index]] : []);
-  const proofTiles = new Set(evidence?.source ?? []);
-  const highlightedMarks = new Set(evidence?.highlights.map(({ tile, digit }) => `${tile}-${digit}`) ?? []);
-  const removedMarks = new Set(evidence?.eliminations.map(({ tile, digit }) => `${tile}-${digit}`) ?? []);
-  const owner = useMemo(() => {
-    const map = new Map<number, number>();
-    tiles.forEach((tile, index) => {
-      for (const [row, col] of tile.cells) map.set(row * COMBINED_SIZE + col, index);
-    });
-    return map;
-  }, [tiles]);
-
-  const digits = useMemo(
-    () =>
-      tiles.map((tile, index) => {
-        const rows = tile.cells.reduce((sum, [row]) => sum + row, 0) / tile.cells.length;
-        const cols = tile.cells.reduce((sum, [, col]) => sum + col, 0) / tile.cells.length;
-        return {
-          index,
-          top: ((rows + 0.5) / COMBINED_SIZE) * 100,
-          left: ((cols + 0.5) / COMBINED_SIZE) * 100,
-        };
-      }),
-    [tiles],
-  );
-
-  return (
-    <div className="relative aspect-square w-full bg-board p-2 shadow-board ring-1 ring-border sm:p-3" role="img" aria-label={label}>
-      <div className="relative h-full w-full">
-        <div
-          className="grid h-full w-full"
-          style={{
-            gridTemplateColumns: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(${COMBINED_SIZE}, minmax(0, 1fr))`,
-          }}
-        >
-          {Array.from({ length: COMBINED_SIZE * COMBINED_SIZE }).map((_, cell) => {
-            const row = Math.floor(cell / COMBINED_SIZE);
-            const col = cell % COMBINED_SIZE;
-            const self = owner.get(cell);
-            const inAxis = proofGroups.some((group) => group.kind === "row" ? group.index === row : group.kind === "column" ? group.index === col : group.index === tiles[self ?? -1]?.boardIndex);
-            const sameAs = (r: number, c: number) =>
-              r >= 0 && c >= 0 && r < COMBINED_SIZE && c < COMBINED_SIZE && owner.get(r * COMBINED_SIZE + c) === self;
-            return (
-              <div
-                key={cell}
-                onClick={onSelect && self !== undefined ? () => onSelect(self) : undefined}
-                data-cell={cell}
-                data-axis={inAxis || undefined}
-                className={`border-solid border-foreground/60 ${onSelect ? "cursor-pointer" : ""} ${self !== undefined && proofTiles.has(self) ? "bg-step-highlight" : self !== undefined && self === selected ? "bg-step-highlight" : inAxis || (self !== undefined && seen.has(self)) ? "bg-step-axis" : givens[self ?? -1] ? "bg-given-surface" : "bg-card"}`}
-                style={{
-                  borderTopWidth: sameAs(row - 1, col) ? 0 : 1,
-                  borderBottomWidth: sameAs(row + 1, col) ? 0 : 1,
-                  borderLeftWidth: sameAs(row, col - 1) ? 0 : 1,
-                  borderRightWidth: sameAs(row, col + 1) ? 0 : 1,
-                }}
-              />
-            );
-          })}
-        </div>
-        <div className="pointer-events-none absolute inset-0">
-          {digits.map(({ index, top, left }) => {
-            const value = values[index] ?? 0;
-            if (!value) return null;
-            return (
-              <span
-                key={`${spin}-${index}`}
-                data-value-tile={index}
-                className={`absolute -translate-x-1/2 -translate-y-1/2 text-sm font-bold sm:text-lg ${givens[index] ? "text-given-ink" : "text-solved-ink"}`}
-                style={{ top: `${top}%`, left: `${left}%` }}
-              >
-                {value}
-              </span>
-            );
-          })}
-          {marks?.map((digitsHere, index) => {
-            const position = digits[index];
-            const removed = evidence?.eliminations.filter((item) => item.tile === index).map((item) => item.digit) ?? [];
-            if (!position || (!digitsHere.length && !removed.length) || values[index]) return null;
-            return (
-              <span
-                key={`m-${index}`}
-                className="absolute grid h-[min(7%,1.7rem)] w-[min(7%,1.7rem)] -translate-x-1/2 -translate-y-1/2 grid-cols-3 place-items-center text-[0.51rem] font-semibold leading-none text-solved-ink sm:text-[0.69rem]"
-                style={{ top: `${position.top}%`, left: `${position.left}%` }}
-              >
-                {Array.from({ length: 9 }, (_, digit) => {
-                  const number = digit + 1;
-                  const crossed = removedMarks.has(`${index}-${number}`);
-                  const highlighted = highlightedMarks.has(`${index}-${number}`);
-                  return <span key={digit} data-candidate={digitsHere.includes(number) || crossed ? `${index}-${number}` : undefined} data-removed={crossed || undefined} className={crossed ? "text-elimination-ink line-through decoration-2" : highlighted ? "bg-step-highlight font-extrabold ring-1 ring-solved-ink" : ""}>{digitsHere.includes(number) || crossed ? number : ""}</span>;
-                })}
-              </span>
-            );
-          })}
-        </div>
-        <div className="pointer-events-none absolute inset-0 grid grid-cols-3 grid-rows-3" aria-hidden="true">
-          {Array.from({ length: BOARD_COUNT }).map((_, index) => (
-            <div key={index} className="border-2 border-foreground/70" />
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function Guide() {
   const [page, setPage] = useState(0);
@@ -318,6 +211,24 @@ function Index() {
     return tile?.cells.map(([row, col]) => `R${row + 1}C${col + 1}`).join("/") ?? "";
   }) ?? [];
 
+  const copyJson = async () => {
+    if (!puzzle) return;
+    const data = {
+      version,
+      size: COMBINED_SIZE,
+      tiles: puzzle.tiles.map((tile, index) => ({ index, region: tile.boardIndex + 1, cells: tile.cells.map(([r, c]) => `R${r + 1}C${c + 1}`), given: puzzle.clues[index] || null, solution: puzzle.solution[index] })),
+      givenCount: clueCount,
+      difficulty: techniqueSummary.difficulty,
+      score: techniqueSummary.score,
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      toast.success("Puzzle JSON copied to clipboard");
+    } catch {
+      toast.error("Could not access the clipboard");
+    }
+  };
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border bg-background/95 px-4 py-3 sm:px-6">
@@ -338,6 +249,15 @@ function Index() {
       </header>
 
       <div className="mx-auto flex max-w-7xl flex-col items-center gap-7 px-4 py-8 sm:px-6">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Select value={version} onValueChange={changeVersion} disabled={generating}>
+            <SelectTrigger className="h-12 w-36 rounded-full" aria-label="Tile layout version"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {VERSIONS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <Button asChild variant="outline" className="h-12 rounded-full px-6 font-semibold"><Link to="/custom"><Hammer aria-hidden="true" />Custom build</Link></Button>
+        </div>
         <div className="grid w-full gap-8 lg:grid-cols-2">
           <section className="space-y-3"><h2 className="text-center text-sm font-semibold uppercase tracking-widest text-muted-foreground">Puzzle</h2><CellBoard tiles={tiles} values={clueValues} givens={clueValues} spin={spin} label="Parquet Sudoku puzzle" marks={marks} selected={selected} onSelect={(i) => setSelected((cur) => (cur === i ? null : i))} />
             <p className="min-h-5 text-center text-sm font-semibold" aria-live="polite">{selectedLabel}</p></section>
@@ -346,16 +266,11 @@ function Index() {
 
         <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
           <p className="text-sm font-semibold" aria-live="polite">Given cells: {clueCount}</p>
-          {puzzle ? <p className="text-sm font-semibold" title="Based on the hardest technique used in this walkthrough">Difficulty: {techniqueSummary.difficulty}</p> : null}
+          {puzzle ? <p className="text-sm font-semibold" title="Based on the hardest technique used in this walkthrough">Difficulty: {techniqueSummary.difficulty} · {techniqueSummary.score.toLocaleString()} points</p> : null}
+          {puzzle ? <Button type="button" variant="ghost" size="sm" className="h-5 px-2 text-sm font-semibold" onClick={() => void copyJson()}><ClipboardCopy aria-hidden="true" />Copy JSON</Button> : null}
         </div>
 
         <div className="flex w-full flex-col items-center gap-4 sm:flex-row sm:justify-center">
-          <Select value={version} onValueChange={changeVersion} disabled={generating}>
-            <SelectTrigger className="h-12 w-36 rounded-full" aria-label="Tile layout version"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {VERSIONS.map((item) => <SelectItem key={item.id} value={item.id}>{item.label}</SelectItem>)}
-            </SelectContent>
-          </Select>
           <Button type="button" onClick={() => void generate()} disabled={generating} size="lg" className="h-12 rounded-full px-8 font-semibold shadow-board">
             {generating && !hunting ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <RefreshCw aria-hidden="true" />}
             {generating && !hunting ? "Generating puzzle…" : "Generate a grid"}
