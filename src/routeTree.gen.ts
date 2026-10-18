@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CustomRouteImport } from './routes/custom'
 import { Route as TechniquesRouteImport } from './routes/techniques'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomRoute = CustomRouteImport.update({
+  id: '/custom',
+  path: '/custom',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TechniquesRoute = TechniquesRouteImport.update({
@@ -25,27 +31,31 @@ const TechniquesRoute = TechniquesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/custom': typeof CustomRoute
   '/techniques': typeof TechniquesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/custom': typeof CustomRoute
   '/techniques': typeof TechniquesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/custom': typeof CustomRoute
   '/techniques': typeof TechniquesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/techniques'
+  fullPaths: '/' | '/custom' | '/techniques'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/techniques'
-  id: '__root__' | '/' | '/techniques'
+  to: '/' | '/custom' | '/techniques'
+  id: '__root__' | '/' | '/custom' | '/techniques'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CustomRoute: typeof CustomRoute
   TechniquesRoute: typeof TechniquesRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/custom': {
+      id: '/custom'
+      path: '/custom'
+      fullPath: '/custom'
+      preLoaderRoute: typeof CustomRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/techniques': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CustomRoute: CustomRoute,
   TechniquesRoute: TechniquesRoute,
 }
 export const routeTree = rootRouteImport

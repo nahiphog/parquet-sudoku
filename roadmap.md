@@ -17,3 +17,7 @@
 - [x] Apply given/solved digit colors and enlarge candidates
 - [x] Add walkthrough evidence and delayed crossed-out eliminations without grid animation
 - [x] Verify walkthrough navigation and generation
+- [x] Move layout picker to top, default light mode
+- [x] Rename forcing chain to Brute Force (+10000 per step), show numeric score
+- [x] Copy puzzle JSON to clipboard
+- [x] Custom build page with green cell picking and halt

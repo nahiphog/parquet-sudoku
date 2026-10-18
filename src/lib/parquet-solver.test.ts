@@ -81,3 +81,14 @@ describe("technique summary", () => {
     expect(summarizeTechniques([{ technique: "naked-subset", title: "Naked Pair" }]).difficulty).toBe("Intermediate");
   });
 });
+describe("difficulty score", () => {
+  it("adds 10000 points for each Brute Force step", () => {
+    const base = summarizeTechniques([{ technique: "naked-single", title: "Naked Single" }]).score;
+    const withBrute = summarizeTechniques([
+      { technique: "naked-single", title: "Naked Single" },
+      { technique: "forcing-chain", title: "Brute Force" },
+      { technique: "forcing-chain", title: "Brute Force" },
+    ]).score;
+    expect(withBrute - base).toBe(20000);
+  });
+});
