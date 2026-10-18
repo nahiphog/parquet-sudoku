@@ -71,6 +71,7 @@
   --color-solved-ink: var(--solved-ink);
   --color-given-surface: var(--given-surface);
   --color-step-highlight: var(--step-highlight);
+  --color-custom-cell: var(--custom-cell);
   --color-step-axis: var(--step-axis);
   --color-elimination-ink: var(--elimination-ink);
   --font-display: "Fraunces", Georgia, serif;
@@ -126,6 +127,7 @@
   --solved-ink: oklch(0.48 0.22 260);
   --given-surface: oklch(0.99 0.01 88);
   --step-highlight: oklch(0.88 0.14 95);
+  --custom-cell: oklch(0.82 0.15 150);
   --step-axis: oklch(0.92 0.04 250);
   --elimination-ink: oklch(0.53 0.23 27);
 }
@@ -167,6 +169,7 @@
   --board-line: oklch(0.34 0.035 60);
   --solved-ink: oklch(0.76 0.14 250);
   --step-highlight: oklch(0.43 0.1 95);
+  --custom-cell: oklch(0.5 0.13 150);
   --step-axis: oklch(0.29 0.055 250);
   --elimination-ink: oklch(0.74 0.18 27);
 }
