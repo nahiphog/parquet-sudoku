@@ -225,7 +225,7 @@ export function buildWalkthrough(clues: number[], solution: number[], model: Puz
       return countSolutions(trial, model, 1) === 0;
     });
     if (!correct || contradicted.length !== alternatives.length) break;
-    place(index, correct, "forcing-chain", "Forcing Chain", `Testing ${alternatives.join(", ") || "every alternative"} leads to a contradiction, so ${correct} is forced.`);
+    place(index, correct, "forcing-chain", "Brute Force", `Testing ${alternatives.join(", ") || "every alternative"} leads to a contradiction, so ${correct} is forced.`);
   }
 
   return { initial, steps };

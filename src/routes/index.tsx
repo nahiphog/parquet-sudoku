@@ -208,7 +208,7 @@ function Index() {
 
   useEffect(() => {
     const saved = window.localStorage.getItem("parquet-theme");
-    const useDark = saved ? saved === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const useDark = saved ? saved === "dark" : false;
     setDark(useDark);
     document.documentElement.classList.toggle("dark", useDark);
   }, []);

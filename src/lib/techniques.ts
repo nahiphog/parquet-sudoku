@@ -60,10 +60,10 @@ export const TECHNIQUES: Technique[] = [
   },
   {
     id: "forcing-chain",
-    name: "Forcing Chain by Contradiction",
+    name: "Brute Force",
     level: "Advanced",
     summary: "Every alternative candidate leads to a contradiction.",
-    detail: "Test each candidate against the constraints. When all alternatives fail, the surviving candidate is forced.",
+    detail: "Test each candidate by exhaustive search. When all alternatives fail, the surviving candidate is forced. Each Brute Force step adds 10,000 to the difficulty score.",
   },
 ];
 
@@ -96,5 +96,24 @@ export function summarizeTechniques(steps: Array<{ technique: TechniqueId; title
   });
   const rows = [...tally.values()].sort((a, b) => techniqueRank(a.technique, a.title) - techniqueRank(b.technique, b.title));
   const hardest = rows.at(-1);
-  return { rows, difficulty: hardest ? techniqueById(hardest.technique).level : "Foundation" };
+  const score = steps.reduce((sum, step) => sum + techniqueScore(step.technique, step.title), 0);
+  return { rows, score, difficulty: hardest ? techniqueById(hardest.technique).level : "Foundation" };
+}
+/** Points added to the numeric difficulty score for each step of a technique. */
+export const TECHNIQUE_POINTS: Record<TechniqueId, number> = {
+  "naked-single": 1,
+  "hidden-single": 2,
+  "locked-candidates": 5,
+  "naked-subset": 10,
+  "hidden-subset": 15,
+  fish: 30,
+  "forcing-chain": 10000,
+};
+
+export function techniqueScore(id: TechniqueId, title: string): number {
+  const base = TECHNIQUE_POINTS[id];
+  if (id === "forcing-chain") return base;
+  if (title.includes("Triple") || title === "Swordfish") return base * 2;
+  if (title.includes("Quad") || title === "Jellyfish") return base * 3;
+  return base;
 }
