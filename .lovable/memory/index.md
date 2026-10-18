@@ -1,0 +1,1 @@
+- [Difficulty score](mem://features/difficulty-score) — Brute Force +10000/step, other weights, light default
